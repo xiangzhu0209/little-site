@@ -31,8 +31,10 @@
         .done-btn { background: #6b8e23; color: white; border: none; width: 100%; padding: 20px; border-radius: 15px; font-size: 1.5em; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #55721c; }
         .done-btn:active { transform: translateY(2px); box-shadow: none; }
         .log-area { margin-top: 10px; font-size: 1em; background: #f0eeeb; padding: 15px; border-radius: 15px; }
-        #order-log { max-height: 200px; overflow-y: auto; margin-top: 10px; }
-        .log-item { display: flex; justify-content: space-between; border-bottom: 1px solid #d1c7bc; padding: 8px 0; align-items: center; }
+        #order-log { max-height: 250px; overflow-y: auto; margin-top: 10px; }
+        .log-item { border-bottom: 1px solid #d1c7bc; padding: 10px 0; }
+        .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .log-details { font-size: 0.85em; color: #7a6e61; line-height: 1.4; }
         @media (max-width: 1024px) { .main-content { flex-direction: row; } }
     </style>
 </head>
@@ -69,12 +71,12 @@
 
 <script>
     let payType = '現金';
-    // 優先讀取手機內的舊紀錄，如果沒有才是空陣列
     let orderHistory = JSON.parse(localStorage.getItem('pos_orders')) || [];
     
+    // 妳詳細的菜單清單
     const inventory = [
         { cat: "A 包包", items: [{n:"A01 針織(黃鬱金香)",p:79},{n:"A02 針織(米小白狗)",p:79},{n:"A03 波點小狗化妝包",p:99},{n:"A04 皺肩包(銀)",p:199},{n:"A05 皺肩包(藍)",p:199},{n:"A06 保齡球包(咖)",p:249},{n:"A07 豹紋小廢包(咖)",p:149},{n:"A08 皺肩包(銀斜胯)",p:199},{n:"A09 皺肩包(白斜胯)",p:199},{n:"A10 月牙腋下(黑)",p:199},{n:"A11 月牙腋下(白)",p:199},{n:"A12 雲朵迷你(白)",p:139},{n:"A13 雲朵迷你(黑)",p:139},{n:"A14 亮皮斜胯(黑)",p:249},{n:"A15 折疊化妝包(狗)",p:99},{n:"A16 卡其豹紋小方包",p:139},{n:"A17 編織月牙(粉紅)",p:199},{n:"A18 跳色月牙(米白)",p:199},{n:"A19 Y2K鍊條雙肩包",p:199},{n:"A20 JK日系郵差包",p:289},{n:"A21 漆皮法棍(黑)",p:199},{n:"A22 珍珠雙鍊(粉)",p:249},{n:"A23 珍珠雙鍊(白)",p:249},{n:"A24 方形腋下(黑)",p:199},{n:"A25 方形腋下(紅棕)",p:199},{n:"A26 大容量保齡球",p:289},{n:"A27 蕾絲後背(黑)",p:199},{n:"A28 蕾絲後背(粉)",p:199},{n:"A29 褶皺雲朵包",p:199},{n:"A30 針織(眼鏡狗)",p:139},{n:"A31 針織(紅格狗)",p:139}] },
-        { cat: "B 小物", items: [{n:"B01 迷你磁吸小檯燈(藍色)",p:79},{n:"B02 迷你磁吸小檯燈(綠色)",p:79},{n:"B03 章魚暖光燈(藍色)",p:89},{n:"B04 章魚暖光燈(黃色)",p:89},{n:"B05 鬱金香封口夾(黃)",p:69},{n:"B06 鬱金香封口夾(粉)",p:69},{n:"B07 七層漢堡塑膠盤",p:129},{n:"B08 黃色眼睛化妝鏡",p:99},{n:"B09 粉色眼睛化妝鏡",p:99},{n:"B10 無毒軟頭丙烯馬克筆(12色)",p:99},{n:"B11 無毒軟頭丙烯馬克筆(48色)",p:259},{n:"B12 便利店存錢罐",p:159},{n:"B13 廣角鏡手機支架",p:99},{n:"B14 小麥麥耳機帽",p:89},{n:"B15 多巴胺計算機(黃)",p:99},{n:"B16 多巴胺計算機(紫)",p:99},{n:"B17 多巴胺計算機(白)",p:99},{n:"B18 雲朵鏡",p:49},{n:"B19 酪梨造型香氛蠟燭",p:99},{n:"B20 橘子造型香氛蠟燭",p:99},{n:"B21 聖誕樹香氛蠟燭(白)",p:99},{n:"B22 聖誕樹香氛蠟燭(綠)",p:99},{n:"B23 搞怪水果香氛蠟燭(柿子)",p:99},{n:"B24 搞怪水果香氛蠟燭(山竹)",p:99},{n:"B25 星星人手機氣囊(捧星)",p:59},{n:"B26 星星人手機氣囊(看星)",p:59},{n:"B27 無尾熊磁吸手機氣囊",p:79},{n:"B28 手提抱枕毯(夾心餅乾)",p:249},{n:"B29 手提抱枕毯(巧克力餅乾)",p:249},{n:"B30 胡蘿蔔錄音筆",p:69},{n:"B31 可頌掛勾",p:99}] },
+        { cat: "B 小物", items: [{n:"B01 迷你磁吸小檯燈(藍色)",p:79},{n:"B02 迷你磁吸小檯燈(綠色)",p:79},{n:"B03 章魚暖光燈(藍色)",p:89},{n:"B04 章魚暖光燈(黃色)",p:89},{n:"B05 鬱金香封口夾(黃)",p:69},{n:"B06 鬱金香封口夾(粉)",p:69},{n:"B07 七層漢堡塑膠盤",p:129},{n:"B08 黃色眼睛化妝鏡",p:99},{n:"B09 粉色眼睛化妝鏡",p:99},{n:"B10 無毒軟頭丙烯馬克筆(12色)",p:99},{n:"B11 無毒軟頭丙烯馬克筆(48色)",p:259},{n:"B12 便利店存錢罐",p:159},{n:"B13 廣角鏡手機支架",p:99},{n:"B14 小麥麥耳機帽",p:89},{n:"B15 多巴胺計算機(黃)",p:99},{n:"B15 多巴胺計算機(紫)",p:99},{n:"B17 多巴胺計算機(白)",p:99},{n:"B18 雲朵鏡",p:49},{n:"B19 酪梨造型香氛蠟燭",p:99},{n:"B20 橘子造型香氛蠟燭",p:99},{n:"B21 聖誕樹香氛蠟燭(白)",p:99},{n:"B22 聖誕樹香氛蠟燭(綠)",p:99},{n:"B23 搞怪水果香氛蠟燭(柿子)",p:99},{n:"B24 搞怪水果香氛蠟燭(山竹)",p:99},{n:"B25 星星人手機氣囊(捧星)",p:59},{n:"B26 星星人手機氣囊(看星)",p:59},{n:"B27 無尾熊磁吸手機氣囊",p:79},{n:"B28 手提抱枕毯(夾心餅乾)",p:249},{n:"B29 手提抱枕毯(巧克力餅乾)",p:249},{n:"B30 胡蘿蔔錄音筆",p:69},{n:"B31 可頌掛勾",p:99}] },
         { cat: "C 手巾", items: [{n:"C01 雨傘擦手巾",p:79},{n:"C02 紅色蘑菇手巾",p:79},{n:"C03 藍色帽子小狗擦手巾",p:99},{n:"C04 麥當貓擦手巾",p:99},{n:"C05 海星擦手巾",p:99},{n:"C06 水母擦手巾",p:99},{n:"C07 加大可愛小狗擦手巾",p:129},{n:"C08 加大可愛小熊擦手巾",p:129},{n:"C09 加大可愛小豬擦手巾",p:129},{n:"C10 咖啡小狗擦手巾",p:99},{n:"C11 麵包狗擦手巾",p:99},{n:"C12 袋子狗擦手巾",p:99},{n:"C13 背包狗擦手巾",p:99},{n:"C14 線條狗擦手巾",p:99},{n:"C15 星星人擦手巾",p:99},{n:"C16 洋蔥小狗擦手巾",p:99},{n:"C17 橘子小狗擦手巾",p:99},{n:"C18 吐舌頭粉紅狗",p:99},{n:"C19 帽子長耳狗",p:99}] },
         { cat: "D 髮飾", items: [{n:"D01 磨砂樹脂無痕夾一對(黑)",p:49},{n:"D02 磨砂樹脂無痕夾一對(白)",p:49},{n:"D03 波紋奶糖鯊魚夾",p:69},{n:"D04 花邊小髮圈(黑)",p:29},{n:"D05 布面豹紋無痕夾一對",p:69},{n:"D06 藍色格子櫻桃花朵圈",p:79},{n:"D07 藍色櫻桃條紋大腸圈",p:69},{n:"D08 毛毛鯊魚夾(淺咖)",p:69},{n:"D09 毛毛鯊魚夾(深棕)",p:69},{n:"D10 愛心鑽無痕夾一對",p:69},{n:"D11 絨面愛心水滴bb夾一對(白)",p:69},{n:"D12 絨面愛心水滴bb夾一對(豹紋)",p:69},{n:"D13 蝴蝶結格子對夾",p:69},{n:"D14 布面豹紋花苞圈",p:79},{n:"D15 紅邊灰髮圈",p:79},{n:"D16 藍條紋奶油花邊大腸圈",p:79},{n:"D17 菱紋咖色無痕夾一對",p:49},{n:"D18 白色水波紋無痕夾一對",p:49},{n:"D19 橢圓蝴蝶結夾一對(銀)",p:69},{n:"D20 橢圓蝴蝶結夾一對(白)",p:69},{n:"D21 大號豹紋鯊魚夾(咖)",p:69},{n:"D22 醋酸金標無痕夾一對(黑)",p:79},{n:"D23 醋酸金標無痕夾一對(白)",p:79},{n:"D24 珍珠蝴蝶結無痕夾一對(銀)",p:79},{n:"D25 韓系黑邊斜紋花邊圈",p:79},{n:"D26 格紋扇形鯊魚夾",p:79},{n:"D27 黑邊格紋收腰圈",p:69},{n:"D28 蝴蝶結咖色格紋三節圈",p:79},{n:"D29 蝴蝶結春天色蕾絲大腸圈",p:79},{n:"D30 蝴蝶結春天色水滴bb夾一對",p:69},{n:"D31 彈力髮圈罐裝(奶咖)",p:49},{n:"D32 彈力髮圈罐裝(黑色)",p:49},{n:"D33 水滴bb夾一對(五款各二)",p:82},{n:"D34 大號豹紋鯊魚夾(灰)",p:69},{n:"D35 珍珠櫻桃無痕夾一對",p:79},{n:"D36 格紋櫻桃無痕夾",p:69},{n:"D37 素咖+豹紋(橢圓夾)",p:59},{n:"D38 素咖+豹紋(水滴夾)",p:59},{n:"D39 素咖+豹紋(愛心夾)",p:59}] },
         { cat: "E 娃娃", items: [{n:"E01 畫家西高地(咖)",p:99},{n:"E02 畫家西高地(藍)",p:99},{n:"E03 畫家西高地(紅)",p:99},{n:"E04 畫家西高地(粉)",p:99},{n:"E05 白雪公主裝扮西高地",p:129},{n:"E06 小香風裝扮西高地",p:129},{n:"E07 胡蘿蔔裝扮西高地",p:129},{n:"E08 搞怪長毛小怪獸40cm(粉)",p:199},{n:"E09 搞怪長毛小怪獸40cm(紫)",p:199},{n:"E10 麥當貓叔叔小掛件",p:39},{n:"E11 麥當貓小掛件",p:39},{n:"E12 圓點小狗小掛件",p:49},{n:"E13 鬱金香掛件(黃)",p:39},{n:"E14 鬱金香掛件(紫)",p:39},{n:"E15 鬱金香掛件(粉)",p:39},{n:"E16 搞怪醜萌花朵",p:49},{n:"E17 裝扮怕洽狗",p:79},{n:"E18 薑餅人",p:39},{n:"E19 聖誕樹",p:39},{n:"E20 千里眼小強",p:39},{n:"E21 墨鏡小強",p:39},{n:"E22 抽拉兔子(紫)",p:129},{n:"E23 抽拉兔子(黃)",p:129},{n:"E24 一條狗",p:99}] },
@@ -93,7 +95,7 @@
             s.items.forEach(item => h += `<div class="p-btn" onclick="add('${item.n}', ${item.p})"><span class="p-name">${item.n}</span><span class="p-price">$${item.p}</span></div>`);
             area.innerHTML += h + `</div>`;
         });
-        renderLog(); // 初始化時讀取舊紀錄
+        renderLog();
     }
 
     function add(n,p) { cart.push({n,p}); render(); }
@@ -119,50 +121,44 @@
         document.getElementById('btn-card').classList.toggle('active', type === '電支');
     }
 
-    // --- 關鍵：傳送至 Google 與 儲存紀錄 ---
     async function submit() {
         if(!cart.length) return;
         const total = document.getElementById('final-total').innerText;
-        const orderDetails = cart.map(i => `${i.n}`).join(', '); // 整理品項名稱
-        const time = new Date().toLocaleString(); // 完整時間
-
-        // 1. 先顯示本地成功 (讓妳不用等網路傳完)
+        // 把具體的點單內容串接起來
+        const details = cart.map(i => i.n).join(', ');
         const displayTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        orderHistory.unshift({time: displayTime, payType, total});
+
+        // 先存進本地紀錄 (包含 details 點單詳情)
+        orderHistory.unshift({time: displayTime, payType, total, details});
         saveLog();
         renderLog();
 
-        // 2. 背景傳送到 Google 表單
+        // 傳送到 Google
         const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdX8Gk4YPPV05mSDKfL3gqSiXTZS8v47Qot180v0TgUpVbhQA/formResponse";
         const formData = new URLSearchParams();
-        formData.append("entry.1017415494", `${orderDetails} (${payType})`); // 傳送到 點單內容
-        formData.append("entry.1481105934", total);   // 傳送到 總金額
+        formData.append("entry.1017415494", `${details} (${payType})`);
+        formData.append("entry.1481105934", total);
 
         try {
             fetch(formUrl, { method: "POST", mode: "no-cors", body: formData });
-            alert(`結帳成功！\n總金額: $${total}\n紀錄已備份至雲端。`);
-        } catch (e) {
-            console.log("雲端備份失敗，但本地紀錄已儲存。");
-        }
+            alert(`結帳成功！\n金額: $${total}\n紀錄已存至雲端與本地。`);
+        } catch (e) { console.log("雲端傳送失敗"); }
 
-        // 3. 清空介面
-        cart = []; 
-        document.getElementById('discount').value = ''; 
-        document.getElementById('received').value = ''; 
-        render();
+        cart = []; document.getElementById('discount').value = ''; document.getElementById('received').value = ''; render();
     }
 
-    function saveLog() {
-        localStorage.setItem('pos_orders', JSON.stringify(orderHistory));
-    }
+    function saveLog() { localStorage.setItem('pos_orders', JSON.stringify(orderHistory)); }
 
     function renderLog() {
         const logArea = document.getElementById('order-log');
         if(!orderHistory.length) { logArea.innerHTML = "尚未有紀錄"; return; }
         logArea.innerHTML = orderHistory.map((order, idx) => `
             <div class="log-item">
-                <span style="font-size:1.1em;"><b>${order.time}</b> | ${order.payType} <span style="color:#d9534f;">$${order.total}</span></span>
-                <span class="del-btn" onclick="if(confirm('確定要作廢這筆嗎？')){orderHistory.splice(${idx},1);saveLog();renderLog();}">作廢</span>
+                <div class="log-header">
+                    <span><b>${order.time}</b> | ${order.payType} <span style="color:#d9534f;">$${order.total}</span></span>
+                    <span class="del-btn" onclick="if(confirm('確定要作廢這筆嗎？')){orderHistory.splice(${idx},1);saveLog();renderLog();}">作廢</span>
+                </div>
+                <div class="log-details">${order.details || '無詳細內容'}</div>
             </div>
         `).join('');
     }
