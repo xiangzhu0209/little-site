@@ -23,12 +23,12 @@
         #cart-list { max-height: 180px; overflow-y: auto; border-bottom: 2px dashed #e8e0d9; margin-bottom: 12px; }
         .total-display { font-size: 2.8em; font-weight: bold; color: #d9534f; text-align: right; margin: 5px 0; }
         .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: bold; }
-        input { width: 90px; padding: 8px; border: 2px solid #e8e0d9; border-radius: 10px; text-align: center; font-size: 1.2em; color: #d9534f; font-weight: bold; }
+        .change-row { color: #2e7d32; border-top: 1px solid #eee; padding-top: 8px; margin-top: 8px; }
+        input { width: 100px; padding: 8px; border: 2px solid #e8e0d9; border-radius: 10px; text-align: center; font-size: 1.1em; color: #5d5246; }
+        input#received { color: #d9534f; border-color: #b0a496; }
         .m-btn { flex: 1; padding: 15px; border-radius: 12px; border: 2px solid #d1c7bc; background: white; font-weight: bold; cursor: pointer; text-align: center; }
         .m-btn.active { background: var(--accent-brown); color: white; border-color: var(--accent-brown); }
         .done-btn { background: #6b8e23; color: white; border: none; width: 100%; padding: 18px; border-radius: 15px; font-size: 1.4em; font-weight: bold; cursor: pointer; }
-        
-        /* 歷史紀錄新樣式 */
         .date-group { margin-top: 15px; border-top: 2px solid #eee; padding-top: 10px; }
         .date-header { background: #8c7b6c; color: white; padding: 5px 12px; border-radius: 8px; font-size: 0.9em; display: flex; justify-content: space-between; margin-bottom: 8px; }
         .log-item { background: #fdfaf8; border-radius: 8px; padding: 10px; margin-bottom: 6px; border-left: 4px solid #b0a496; font-size: 0.85em; }
@@ -46,8 +46,11 @@
                 <div class="total-display">$<span id="final-total">0</span></div>
             </div>
             <div class="card">
-                <div class="row"><span>折扣:</span><input type="number" id="discount" oninput="calc()"></div>
-                <div class="pay-method" style="display:flex; gap:10px; margin-bottom:15px;">
+                <div class="row"><span>折扣金額:</span><input type="number" id="discount" placeholder="0" oninput="calc()"></div>
+                <div class="row"><span>實收金額:</span><input type="number" id="received" placeholder="輸入收款" oninput="checkChange()"></div>
+                <div class="row change-row"><span>找零金額:</span><span style="font-size:1.5em;" id="change-amount">$0</span></div>
+                
+                <div class="pay-method" style="display:flex; gap:10px; margin:15px 0;">
                     <div class="m-btn active" id="btn-cash" onclick="setPay('現金')">💵 現金</div>
                     <div class="m-btn" id="btn-card" onclick="setPay('電支')">📱 電支</div>
                 </div>
@@ -56,7 +59,7 @@
             <div class="card log-area">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <strong>📝 歷史成交紀錄</strong>
-                    <button onclick="if(confirm('清空將刪除所有日期的iPad紀錄？')){orderHistory=[]; localStorage.removeItem('pos_history_v3'); updateLogDisplay();}" style="font-size:0.7em;">全部清空</button>
+                    <button onclick="if(confirm('清空將刪除所有紀錄？')){orderHistory=[]; localStorage.removeItem('pos_history_v3'); updateLogDisplay();}" style="font-size:0.7em;">全部清空</button>
                 </div>
                 <div id="order-log"></div>
             </div>
@@ -67,6 +70,7 @@
     let payType = '現金', cart = [];
     let orderHistory = JSON.parse(localStorage.getItem('pos_history_v3') || '[]');
 
+    // (此處保留原本的 inventory 資料不變...)
     const inventory = [
         { cat: "A 包包", items: [{n:"A01 針織(黃鬱金香)",p:79},{n:"A02 針織(米小白狗)",p:79},{n:"A03 波點小狗化妝包",p:99},{n:"A04 皺肩包(銀)",p:199},{n:"A05 皺肩包(藍)",p:199},{n:"A06 保齡球包(咖)",p:249},{n:"A07 豹紋小廢包(咖)",p:149},{n:"A08 皺肩包(銀斜胯)",p:199},{n:"A09 皺肩包(白斜胯)",p:199},{n:"A10 月牙腋下(黑)",p:199},{n:"A11 月牙腋下(白)",p:199},{n:"A12 雲朵迷你(白)",p:139},{n:"A13 雲朵迷你(黑)",p:139},{n:"A14 亮皮斜胯(黑)",p:249},{n:"A15 折疊化妝包(狗)",p:99},{n:"A16 卡其豹紋小方包",p:139},{n:"A17 編織月牙(粉紅)",p:199},{n:"A18 跳色月牙(米白)",p:199},{n:"A19 Y2K鍊條雙肩包",p:199},{n:"A20 JK日系郵差包",p:289},{n:"A21 漆皮法棍(黑)",p:199},{n:"A22 珍珠雙鍊(粉)",p:249},{n:"A23 珍珠雙鍊(白)",p:249},{n:"A24 方形腋下(黑)",p:199},{n:"A25 方形腋下(紅棕)",p:199},{n:"A26 大容量保齡球",p:289},{n:"A27 蕾絲後背(黑)",p:199},{n:"A28 蕾絲後背(粉)",p:199},{n:"A29 褶皺雲朵包",p:199},{n:"A30 針織(眼鏡狗)",p:139},{n:"A31 針織(紅格狗)",p:139}] },
         { cat: "B 小物", items: [{n:"B01 迷你磁吸小檯燈(藍色)",p:79},{n:"B02 迷你磁吸小檯燈(綠色)",p:79},{n:"B03 章魚暖光燈(藍色)",p:89},{n:"B04 章魚暖光燈(黃色)",p:89},{n:"B05 鬱金香封口夾(黃)",p:69},{n:"B06 鬱金香封口夾(粉)",p:69},{n:"B07 七層漢堡塑膠盤",p:129},{n:"B08 黃色眼睛化妝鏡",p:99},{n:"B09 粉色眼睛化妝鏡",p:99},{n:"B10 無毒軟頭丙烯馬克筆(12色)",p:99},{n:"B11 無毒軟頭丙烯馬克筆(48色)",p:259},{n:"B12 便利店存錢罐",p:159},{n:"B13 廣角鏡手機支架",p:99},{n:"B14 小麥麥耳機帽",p:89},{n:"B15 多巴胺計算機(黃)",p:99},{n:"B15 多巴胺計算機(紫)",p:99},{n:"B17 多巴胺計算機(白)",p:99},{n:"B18 雲朵鏡",p:49},{n:"B19 酪梨造型香氛蠟燭",p:99},{n:"B20 橘子造型香氛蠟燭",p:99},{n:"B21 聖誕樹香氛蠟燭(白)",p:99},{n:"B22 聖誕樹香氛蠟燭(綠)",p:99},{n:"B23 搞怪水果香氛蠟燭(柿子)",p:99},{n:"B24 搞怪水果香氛蠟燭(山竹)",p:99},{n:"B25 星星人手機氣囊(捧星)",p:59},{n:"B26 星星人手機氣囊(看星)",p:59},{n:"B27 無尾熊磁吸手機氣囊",p:79},{n:"B28 手提抱枕毯(夾心餅乾)",p:249},{n:"B29 手提抱枕毯(巧克力餅乾)",p:249},{n:"B30 胡蘿蔔錄音筆",p:69},{n:"B31 可頌掛勾",p:99}] },
@@ -102,16 +106,36 @@
             <div class="row">
                 <span style="flex:1; font-size:0.85em;">${item.n}</span>
                 <span>$${item.p}</span>
-                <span style="color:#ff4d4d; margin-left:10px;" onclick="cart.splice(${i},1);renderCart();">✕</span>
+                <span style="color:#ff4d4d; margin-left:10px; cursor:pointer;" onclick="cart.splice(${i},1);renderCart();">✕</span>
             </div>
         `).join('');
         calc();
     }
+
     function calc() {
         const total = cart.reduce((sum, i) => sum + i.p, 0);
         const disc = Number(document.getElementById('discount').value || 0);
-        document.getElementById('final-total').innerText = Math.max(0, total - disc);
+        const finalTotal = Math.max(0, total - disc);
+        document.getElementById('final-total').innerText = finalTotal;
+        checkChange(); // 重新計算總額時也要更新找零
     }
+
+    // 新增：計算找零邏析
+    function checkChange() {
+        const finalTotal = Number(document.getElementById('final-total').innerText);
+        const received = Number(document.getElementById('received').value || 0);
+        const changeDisplay = document.getElementById('change-amount');
+        
+        if (received > 0) {
+            const change = received - finalTotal;
+            changeDisplay.innerText = "$" + change;
+            changeDisplay.style.color = change < 0 ? "#d9534f" : "#2e7d32"; // 錢不夠變紅色
+        } else {
+            changeDisplay.innerText = "$0";
+            changeDisplay.style.color = "#2e7d32";
+        }
+    }
+
     function setPay(type) {
         payType = type;
         document.getElementById('btn-cash').className = 'm-btn' + (type==='現金'?' active':'');
@@ -121,12 +145,18 @@
     function submit() {
         if(!cart.length) return;
         const total = Number(document.getElementById('final-total').innerText);
+        const received = Number(document.getElementById('received').value || 0);
+        
+        // 如果是現金支付且輸入了收款金額，檢查是否足夠
+        if(payType === '現金' && received > 0 && received < total) {
+            if(!confirm("實收金額不足，確定要結帳嗎？")) return;
+        }
+
         const details = cart.map(i => i.n).join(', ');
         const now = new Date();
-        const dateStr = now.toLocaleDateString(); // 例如 2025/12/31
+        const dateStr = now.toLocaleDateString();
         const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
-        // 存入歷史紀錄 (包含日期)
         orderHistory.unshift({ date: dateStr, time: timeStr, payType, total, details });
         localStorage.setItem('pos_history_v3', JSON.stringify(orderHistory));
         updateLogDisplay();
@@ -137,7 +167,12 @@
         formData.append("entry.567851946", total);
         fetch("https://docs.google.com/forms/d/e/1FAIpQLSdX8Gk4YPPV05mSDKfL3gqSiXTZS8v47Qot180v0TgUpVbhQA/formResponse", { method: "POST", mode: "no-cors", body: formData });
 
-        cart = []; document.getElementById('discount').value = ''; renderCart();
+        // 清空欄位
+        cart = []; 
+        document.getElementById('discount').value = ''; 
+        document.getElementById('received').value = ''; // 清空收款
+        document.getElementById('change-amount').innerText = '$0'; // 清空找零
+        renderCart();
         alert("結帳成功！");
     }
 
@@ -145,7 +180,6 @@
         const logArea = document.getElementById('order-log');
         if(!orderHistory.length) { logArea.innerHTML = "<p style='text-align:center; color:#ccc;'>暫無紀錄</p>"; return; }
 
-        // 按日期分組邏輯
         const groups = {};
         orderHistory.forEach(o => {
             if(!groups[o.date]) groups[o.date] = { orders: [], dayTotal: 0 };
