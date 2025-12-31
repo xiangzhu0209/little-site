@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🧸 角落雜貨舖 POS</title>
+    <style>
+        :root { --main-brown: #b0a496; --bg-cream: #fcf8f5; --accent-brown: #8c7b6c; }
+        body { font-family: sans-serif; background: var(--bg-cream); margin: 0; display: flex; flex-direction: column; height: 100vh; color: #5d5246; overflow: hidden; }
+        
+        /* 頁首放大 */
+        header { background: var(--main-brown); color: white; padding: 15px; text-align: center; font-size: 1.5em; font-weight: bold; flex-shrink: 0; }
+        
+        /* 導覽列按鈕放大 */
+        .nav-bar { background: #e8e0d9; padding: 12px; display: flex; gap: 10px; overflow-x: auto; border-bottom: 2px solid #d1c7bc; flex-shrink: 0; }
+        .nav-btn { background: white; border: 1px solid #d1c7bc; padding: 10px 20px; border-radius: 25px; white-space: nowrap; cursor: pointer; font-weight: bold; font-size: 1em; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        
+        .main-content { display: flex; flex: 1; overflow: hidden; padding: 15px; gap: 15px; }
+        
+        /* 商品區按鈕大幅放大 */
+        .item-area { flex: 2; overflow-y: auto; background: white; border-radius: 15px; padding: 20px; border: 2px solid #e8e0d9; }
+        .cat-title { background: #fdf5f0; padding: 10px 20px; border-radius: 25px; margin: 20px 0 15px; font-weight: bold; font-size: 1.2em; border-left: 8px solid var(--main-brown); }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+        
+        .p-btn { background: white; border: 1px solid #f0e6dd; border-radius: 12px; padding: 15px 10px; text-align: center; cursor: pointer; box-shadow: 3px 3px 0 #e8e0d9; min-height: 90px; display: flex; flex-direction: column; justify-content: center; transition: transform 0.1s; }
+        .p-btn:active { transform: scale(0.95); background: #faf7f4; }
+        .p-name { font-size: 0.95em; font-weight: bold; margin-bottom: 6px; line-height: 1.3; word-break: break-all; color: #4a4238; }
+        .p-price { color: #c2966d; font-size: 1.1em; font-weight: bold; }
+        
+        /* 右側結帳區放大 */
+        .checkout-area { flex: 1; display: flex; flex-direction: column; gap: 15px; min-width: 350px; overflow-y: auto; }
+        .card { background: white; border-radius: 15px; padding: 18px; border: 2px solid #e8e0d9; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        
+        #cart-list { max-height: 250px; overflow-y: auto; border-bottom: 2px dashed #e8e0d9; margin-bottom: 12px; font-size: 1.1em; }
+        .total-display { font-size: 3em; font-weight: bold; color: #d9534f; text-align: right; margin: 10px 0; }
+        
+        .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; font-size: 1.1em; }
+        .del-btn { color: #ff4d4d; cursor: pointer; font-weight: bold; padding: 5px 10px; font-size: 1.2em; }
+        
+        input { width: 110px; padding: 10px; border: 2px solid #e8e0d9; border-radius: 10px; text-align: center; font-size: 1.3em; color: #d9534f; font-weight: bold; }
+        
+        /* 付款按鈕放大 */
+        .pay-method { display: flex; gap: 15px; margin: 15px 0; }
+        .m-btn { flex: 1; padding: 18px; border-radius: 12px; border: 2px solid #d1c7bc; background: white; font-weight: bold; font-size: 1.2em; cursor: pointer; text-align: center; }
+        .m-btn.active { background: var(--accent-brown); color: white; border-color: var(--accent-brown); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+        
+        /* 完成按鈕放大 */
+        .done-btn { background: #6b8e23; color: white; border: none; width: 100%; padding: 20px; border-radius: 15px; font-size: 1.5em; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #55721c; }
+        .done-btn:active { transform: translateY(2px); box-shadow: none; }
+        
+        .log-area { margin-top: 10px; font-size: 1em; background: #f0eeeb; padding: 15px; border-radius: 15px; }
+        #order-log { max-height: 200px; overflow-y: auto; margin-top: 10px; }
+        .log-item { display: flex; justify-content: space-between; border-bottom: 1px solid #d1c7bc; padding: 8px 0; align-items: center; }
+
+        @media (max-width: 1024px) {
+            .main-content { flex-direction: row; } /* iPad 橫向保持並排 */
+        }
+    </style>
+</head>
+<body>
+    <header>🧸 角落雜貨舖 POS - iPad 專用版</header>
+    <div class="nav-bar" id="navbar"></div>
+    <div class="main-content">
+        <div class="item-area" id="item-area"></div>
+        <div class="checkout-area">
+            <div class="card">
+                <h3 style="margin:0 0 10px 0; color:var(--accent-brown);">🛒 購物車</h3>
+                <div id="cart-list"></div>
+                <div class="total-display">$<span id="final-total">0</span></div>
+            </div>
+            <div class="card">
+                <div class="row"><span>折扣:</span><input type="number" id="discount" oninput="calc()" placeholder="0"></div>
+                <div class="row"><span>實收:</span><input type="number" id="received" oninput="calc()" placeholder="0"></div>
+                <div class="row" style="color:#6b8e23; font-size: 1.3em;"><span>找零:</span><span>$<span id="change">0</span></span></div>
+                <div class="pay-method">
+                    <div class="m-btn active" id="btn-cash" onclick="setPay('現金')">💵 現金</div>
+                    <div class="m-btn" id="btn-card" onclick="setPay('電支')">📱 電支</div>
+                </div>
+                <button class="done-btn" onclick="submit()">✨ 完成結帳</button>
+            </div>
+            <div class="card log-area">
+                <strong>📝 今日成交紀錄</strong>
+                <div id="order-log">尚未有紀錄</div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let payType = '現金';
+    let orderHistory = [];
+    const inventory = [
+        { cat: "A 包包", items: [{n:"A01 針織(黃鬱金香)",p:79},{n:"A02 針織(米小白狗)",p:79},{n:"A03 波點小狗化妝包",p:99},{n:"A04 皺肩包(銀)",p:199},{n:"A05 皺肩包(藍)",p:199},{n:"A06 保齡球包(咖)",p:249},{n:"A07 豹紋小廢包(咖)",p:149},{n:"A08 皺肩包(銀斜胯)",p:199},{n:"A09 皺肩包(白斜胯)",p:199},{n:"A10 月牙腋下(黑)",p:199},{n:"A11 月牙腋下(白)",p:199},{n:"A12 雲朵迷你(白)",p:139},{n:"A13 雲朵迷你(黑)",p:139},{n:"A14 亮皮斜胯(黑)",p:249},{n:"A15 折疊化妝包(狗)",p:99},{n:"A16 卡其豹紋小方包",p:139},{n:"A17 編織月牙(粉紅)",p:199},{n:"A18 跳色月牙(米白)",p:199},{n:"A19 Y2K鍊條雙肩包",p:199},{n:"A20 JK日系郵差包",p:289},{n:"A21 漆皮法棍(黑)",p:199},{n:"A22 珍珠雙鍊(粉)",p:249},{n:"A23 珍珠雙鍊(白)",p:249},{n:"A24 方形腋下(黑)",p:199},{n:"A25 方形腋下(紅棕)",p:199},{n:"A26 大容量保齡球",p:289},{n:"A27 蕾絲後背(黑)",p:199},{n:"A28 蕾絲後背(粉)",p:199},{n:"A29 褶皺雲朵包",p:199},{n:"A30 針織(眼鏡狗)",p:139},{n:"A31 針織(紅格狗)",p:139}] },
+        { cat: "B 小物", items: [{n:"B01 迷你磁吸小檯燈(藍色)",p:79},{n:"B02 迷你磁吸小檯燈(綠色)",p:79},{n:"B03 章魚暖光燈(藍色)",p:89},{n:"B04 章魚暖光燈(黃色)",p:89},{n:"B05 鬱金香封口夾(黃)",p:69},{n:"B06 鬱金香封口夾(粉)",p:69},{n:"B07 七層漢堡塑膠盤",p:129},{n:"B08 黃色眼睛化妝鏡",p:99},{n:"B09 粉色眼睛化妝鏡",p:99},{n:"B10 無毒軟頭丙烯馬克筆(12色)",p:99},{n:"B11 無毒軟頭丙烯馬克筆(48色)",p:259},{n:"B12 便利店存錢罐",p:159},{n:"B13 廣角鏡手機支架",p:99},{n:"B14 小麥麥耳機帽",p:89},{n:"B15 多巴胺計算機(黃)",p:99},{n:"B16 多巴胺計算機(紫)",p:99},{n:"B17 多巴胺計算機(白)",p:99},{n:"B18 雲朵鏡",p:49},{n:"B19 酪梨造型香氛蠟燭",p:99},{n:"B20 橘子造型香氛蠟燭",p:99},{n:"B21 聖誕樹香氛蠟燭(白)",p:99},{n:"B22 聖誕樹香氛蠟燭(綠)",p:99},{n:"B23 搞怪水果香氛蠟燭(柿子)",p:99},{n:"B24 搞怪水果香氛蠟燭(山竹)",p:99},{n:"B25 星星人手機氣囊(捧星)",p:59},{n:"B26 星星人手機氣囊(看星)",p:59},{n:"B27 無尾熊磁吸手機氣囊",p:79},{n:"B28 手提抱枕毯(夾心餅乾)",p:249},{n:"B29 手提抱枕毯(巧克力餅乾)",p:249},{n:"B30 胡蘿蔔錄音筆",p:69},{n:"B31 可頌掛勾",p:99}] },
+        { cat: "C 手巾", items: [{n:"C01 雨傘擦手巾",p:79},{n:"C02 紅色蘑菇手巾",p:79},{n:"C03 藍色帽子小狗擦手巾",p:99},{n:"C04 麥當貓擦手巾",p:99},{n:"C05 海星擦手巾",p:99},{n:"C06 水母擦手巾",p:99},{n:"C07 加大可愛小狗擦手巾",p:129},{n:"C08 加大可愛小熊擦手巾",p:129},{n:"C09 加大可愛小豬擦手巾",p:129},{n:"C10 咖啡小狗擦手巾",p:99},{n:"C11 麵包狗擦手巾",p:99},{n:"C12 袋子狗擦手巾",p:99},{n:"C13 背包狗擦手巾",p:99},{n:"C14 線條狗擦手巾",p:99},{n:"C15 星星人擦手巾",p:99},{n:"C16 洋蔥小狗擦手巾",p:99},{n:"C17 橘子小狗擦手巾",p:99},{n:"C18 吐舌頭粉紅狗",p:99},{n:"C19 帽子長耳狗",p:99}] },
+        { cat: "D 髮飾", items: [{n:"D01 磨砂樹脂無痕夾一對(黑)",p:49},{n:"D02 磨砂樹脂無痕夾一對(白)",p:49},{n:"D03 波紋奶糖鯊魚夾",p:69},{n:"D04 花邊小髮圈(黑)",p:29},{n:"D05 布面豹紋無痕夾一對",p:69},{n:"D06 藍色格子櫻桃花朵圈",p:79},{n:"D07 藍色櫻桃條紋大腸圈",p:69},{n:"D08 毛毛鯊魚夾(淺咖)",p:69},{n:"D09 毛毛鯊魚夾(深棕)",p:69},{n:"D10 愛心鑽無痕夾一對",p:69},{n:"D11 絨面愛心水滴bb夾一對(白)",p:69},{n:"D12 絨面愛心水滴bb夾一對(豹紋)",p:69},{n:"D13 蝴蝶結格子對夾",p:69},{n:"D14 布面豹紋花苞圈",p:79},{n:"D15 紅邊灰髮圈",p:79},{n:"D16 藍條紋奶油花邊大腸圈",p:79},{n:"D17 菱紋咖色無痕夾一對",p:49},{n:"D18 白色水波紋無痕夾一對",p:49},{n:"D19 橢圓蝴蝶結夾一對(銀)",p:69},{n:"D20 橢圓蝴蝶結夾一對(白)",p:69},{n:"D21 大號豹紋鯊魚夾(咖)",p:69},{n:"D22 醋酸金標無痕夾一對(黑)",p:79},{n:"D23 醋酸金標無痕夾一對(白)",p:79},{n:"D24 珍珠蝴蝶結無痕夾一對(銀)",p:79},{n:"D25 韓系黑邊斜紋花邊圈",p:79},{n:"D26 格紋扇形鯊魚夾",p:79},{n:"D27 黑邊格紋收腰圈",p:69},{n:"D28 蝴蝶結咖色格紋三節圈",p:79},{n:"D29 蝴蝶結春天色蕾絲大腸圈",p:79},{n:"D30 蝴蝶結春天色水滴bb夾一對",p:69},{n:"D31 彈力髮圈罐裝(奶咖)",p:49},{n:"D32 彈力髮圈罐裝(黑色)",p:49},{n:"D33 水滴bb夾一對(五款各二)",p:82},{n:"D34 大號豹紋鯊魚夾(灰)",p:69},{n:"D35 珍珠櫻桃無痕夾一對",p:79},{n:"D36 格紋櫻桃無痕夾",p:69},{n:"D37 素咖+豹紋(橢圓夾)",p:59},{n:"D38 素咖+豹紋(水滴夾)",p:59},{n:"D39 素咖+豹紋(愛心夾)",p:59}] },
+        { cat: "E 娃娃", items: [{n:"E01 畫家西高地(咖)",p:99},{n:"E02 畫家西高地(藍)",p:99},{n:"E03 畫家西高地(紅)",p:99},{n:"E04 畫家西高地(粉)",p:99},{n:"E05 白雪公主裝扮西高地",p:129},{n:"E06 小香風裝扮西高地",p:129},{n:"E07 胡蘿蔔裝扮西高地",p:129},{n:"E08 搞怪長毛小怪獸40cm(粉)",p:199},{n:"E09 搞怪長毛小怪獸40cm(紫)",p:199},{n:"E10 麥當貓叔叔小掛件",p:39},{n:"E11 麥當貓小掛件",p:39},{n:"E12 圓點小狗小掛件",p:49},{n:"E13 鬱金香掛件(黃)",p:39},{n:"E14 鬱金香掛件(紫)",p:39},{n:"E15 鬱金香掛件(粉)",p:39},{n:"E16 搞怪醜萌花朵",p:49},{n:"E17 裝扮怕洽狗",p:79},{n:"E18 薑餅人",p:39},{n:"E19 聖誕樹",p:39},{n:"E20 千里眼小強",p:39},{n:"E21 墨鏡小強",p:39},{n:"E22 抽拉兔子(紫)",p:129},{n:"E23 抽拉兔子(黃)",p:129},{n:"E24 一條狗",p:99}] },
+        { cat: "F 襪子圍巾", items: [{n:"F01 愛心兔子中筒襪",p:59},{n:"F02 紅帽小狗中筒襪",p:59},{n:"F03 立體貓咪蛋蛋襪",p:49},{n:"F04 波點小狗長統襪",p:49},{n:"F05 EGG刺繡麻花中筒襪",p:69},{n:"F06 澳絨刺繡中筒襪(領結狗)",p:69},{n:"F07 加厚加絨長筒襪(乃白臘腸狗)",p:59},{n:"F08 波點花邊長筒堆堆襪(深咖)",p:69},{n:"F09 波點花邊長筒堆堆襪(奶油白)",p:69},{n:"F10 珊瑚絨掌門狗中筒襪(白藍)",p:69},{n:"F11 珊瑚絨掌門狗中筒襪(白咖)",p:69},{n:"F12 澳絨藍色蝴蝶結中筒襪",p:69},{n:"F13 羊毛刺繡長筒堆堆襪(帽子狗)",p:69},{n:"F14 點點紗中筒襪(粉色兔子)",p:59},{n:"F15 點點紗中筒襪(小狗)",p:59},{n:"F16 飛機狗隱形襪(深灰)",p:49},{n:"F17 飛機狗隱形襪(奶白)",p:49},{n:"F18 飛機狗隱形襪(米色)",p:49},{n:"F19 虞書欣黑米圍巾",p:199},{n:"F20 四色咖啡色格子圍巾",p:199},{n:"F21 一顆紅蘋果圍巾",p:199},{n:"F22 仿羊毛咖啡色格子圍巾",p:239},{n:"F23 防羊毛豹紋圍巾",p:239}] },
+        { cat: "G 餐具", items: [{n:"G01 316不鏽鋼吸管冰壩杯600ml",p:239},{n:"G02 木柄湯匙+叉子",p:99},{n:"G03 鴨鴨湯匙+叉子",p:99},{n:"G04 珍珠湯匙+叉子",p:99},{n:"G05 奶酪湯匙+叉子",p:99},{n:"G06 卡皮巴拉合金筷(太陽花)",p:59},{n:"G07 卡皮巴拉合金筷(青梨)",p:59},{n:"G08 可可豆8.5吋草帽盤",p:239},{n:"G09 6.5寸心型碗",p:159},{n:"G10 6吋甜品碟(快樂小狗)",p:139},{n:"G11 5.5吋樹屋碗",p:189},{n:"G12 8吋薯條盤",p:99},{n:"G13 小狗造型盤",p:129},{n:"G14 小熊造型盤",p:129},{n:"G15 奶酪醬料碟",p:49},{n:"G16 可頌造型盤",p:189},{n:"G17 法棍造型盤",p:189},{n:"G18 圍巾小狗馬克杯320MI",p:99},{n:"G19 圍巾小貓馬克杯320MI",p:99},{n:"G20 踩水小狗碟碟杯",p:129},{n:"G21 蘋果小狗碟碟杯",p:129},{n:"G22 吸管帶柄馬克杯(棕色女孩)",p:159},{n:"G23 吸管帶柄馬克杯(波點小狗)",p:159},{n:"G24 吸管帶柄馬克杯(波點大象)",p:159},{n:"G25 吸管帶柄馬克杯(棕色男孩)",p:159},{n:"G26 吸管帶柄馬克杯(波點小貓)",p:159},{n:"G27 吸管帶柄馬克杯(塗鴉兔兔)",p:159},{n:"G28 薄荷綠9吋珠邊深盤",p:179},{n:"G29 海派甜心9吋深盤",p:189},{n:"G30 小羊8吋圓盤",p:139},{n:"G31 小狗醬料蝶(棕)",p:79},{n:"G32 小狗醬料蝶(灰)",p:79},{n:"G33 喝水鴨醬料",p:79},{n:"G34 煙藍復古咖啡杯蝶套裝",p:239},{n:"G35 透明直條玻璃吸管杯(棕色杯套)",p:99},{n:"G36 透明直條玻璃吸管杯(綠色杯套)",p:99}] },
+        { cat: "H 紅包", items: [{n:"H1 卡通馬年大吉5入",p:39},{n:"H2 卡通財源廣進5入",p:39},{n:"H3 卡通蘋果福5入",p:39},{n:"H4 燙金麻將馬5入",p:39},{n:"H5 燙金馬上有錢5入",p:39},{n:"H6 燙金滿版馬5入",p:39},{n:"H7 Q版開開心心5入",p:39},{n:"H8 Q版馬力全開5入",p:39},{n:"H9 Q版馬上有錢花5入",p:39},{n:"H10 書法新年快樂5入",p:39},{n:"H11 書法平安喜樂5入",p:39},{n:"H12 書法大吉大利5入",p:39},{n:"H13 多巴胺水果系列6入",p:49},{n:"H14 多巴胺小馬系列6入",p:49},{n:"H15 塗鴉水果系列6入",p:49},{n:"H16 卡通水果系列6入",p:49},{n:"H17 卡通小馬系列6入",p:49},{n:"H18 精神小馬系列6入",p:49},{n:"H19 蠟筆小新系列6入",p:59},{n:"H20 三麗鷗系列6入",p:59}] }
+    ];
+
+    let cart = [];
+    function init() {
+        const area = document.getElementById('item-area'), nav = document.getElementById('navbar');
+        inventory.forEach((s, i) => {
+            const id = 'section-' + i;
+            nav.innerHTML += `<div class="nav-btn" onclick="document.getElementById('${id}').scrollIntoView({behavior:'smooth'})">${s.cat}</div>`;
+            let h = `<div class="cat-title" id="${id}">${s.cat}</div><div class="product-grid">`;
+            s.items.forEach(item => h += `<div class="p-btn" onclick="add('${item.n}', ${item.p})"><span class="p-name">${item.n}</span><span class="p-price">$${item.p}</span></div>`);
+            area.innerHTML += h + `</div>`;
+        });
+    }
+
+    function add(n,p) { cart.push({n,p}); render(); }
+    function render() {
+        document.getElementById('cart-list').innerHTML = cart.map((item, idx) => `
+            <div class="row">
+                <span style="flex:1;">${item.n}</span>
+                <span>$${item.p}</span>
+                <span class="del-btn" onclick="cart.splice(${idx},1);render()">✕</span>
+            </div>
+        `).join('');
+        calc();
+    }
+    function calc() {
+        const total = cart.reduce((s, i) => s + i.p, 0), disc = Number(document.getElementById('discount').value || 0), recv = Number(document.getElementById('received').value || 0);
+        const final = Math.max(0, total - disc);
+        document.getElementById('final-total').innerText = final;
+        document.getElementById('change').innerText = (recv > final) ? (recv - final) : 0;
+    }
+    function setPay(type) {
+        payType = type;
+        document.getElementById('btn-cash').classList.toggle('active', type === '現金');
+        document.getElementById('btn-card').classList.toggle('active', type === '電支');
+    }
+    function submit() {
+        if(!cart.length) return;
+        const total = document.getElementById('final-total').innerText;
+        const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        orderHistory.unshift({time, payType, total});
+        renderLog();
+        alert(`結帳成功！總金額: $${total}`);
+        cart = []; document.getElementById('discount').value = ''; document.getElementById('received').value = ''; render();
+    }
+    function renderLog() {
+        const logArea = document.getElementById('order-log');
+        if(!orderHistory.length) { logArea.innerHTML = "尚未有紀錄"; return; }
+        logArea.innerHTML = orderHistory.map((order, idx) => `
+            <div class="log-item">
+                <span style="font-size:1.1em;"><b>${order.time}</b> | ${order.payType} <span style="color:#d9534f;">$${order.total}</span></span>
+                <span class="del-btn" onclick="orderHistory.splice(${idx},1);renderLog()">作廢</span>
+            </div>
+        `).join('');
+    }
+    init();
+</script>
+</body>
+</html>
