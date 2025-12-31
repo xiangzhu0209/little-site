@@ -7,54 +7,33 @@
     <style>
         :root { --main-brown: #b0a496; --bg-cream: #fcf8f5; --accent-brown: #8c7b6c; }
         body { font-family: sans-serif; background: var(--bg-cream); margin: 0; display: flex; flex-direction: column; height: 100vh; color: #5d5246; overflow: hidden; }
-        
-        /* 頁首放大 */
         header { background: var(--main-brown); color: white; padding: 15px; text-align: center; font-size: 1.5em; font-weight: bold; flex-shrink: 0; }
-        
-        /* 導覽列按鈕放大 */
         .nav-bar { background: #e8e0d9; padding: 12px; display: flex; gap: 10px; overflow-x: auto; border-bottom: 2px solid #d1c7bc; flex-shrink: 0; }
         .nav-btn { background: white; border: 1px solid #d1c7bc; padding: 10px 20px; border-radius: 25px; white-space: nowrap; cursor: pointer; font-weight: bold; font-size: 1em; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        
         .main-content { display: flex; flex: 1; overflow: hidden; padding: 15px; gap: 15px; }
-        
-        /* 商品區按鈕大幅放大 */
         .item-area { flex: 2; overflow-y: auto; background: white; border-radius: 15px; padding: 20px; border: 2px solid #e8e0d9; }
         .cat-title { background: #fdf5f0; padding: 10px 20px; border-radius: 25px; margin: 20px 0 15px; font-weight: bold; font-size: 1.2em; border-left: 8px solid var(--main-brown); }
         .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
-        
         .p-btn { background: white; border: 1px solid #f0e6dd; border-radius: 12px; padding: 15px 10px; text-align: center; cursor: pointer; box-shadow: 3px 3px 0 #e8e0d9; min-height: 90px; display: flex; flex-direction: column; justify-content: center; transition: transform 0.1s; }
         .p-btn:active { transform: scale(0.95); background: #faf7f4; }
         .p-name { font-size: 0.95em; font-weight: bold; margin-bottom: 6px; line-height: 1.3; word-break: break-all; color: #4a4238; }
         .p-price { color: #c2966d; font-size: 1.1em; font-weight: bold; }
-        
-        /* 右側結帳區放大 */
         .checkout-area { flex: 1; display: flex; flex-direction: column; gap: 15px; min-width: 350px; overflow-y: auto; }
         .card { background: white; border-radius: 15px; padding: 18px; border: 2px solid #e8e0d9; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        
         #cart-list { max-height: 250px; overflow-y: auto; border-bottom: 2px dashed #e8e0d9; margin-bottom: 12px; font-size: 1.1em; }
         .total-display { font-size: 3em; font-weight: bold; color: #d9534f; text-align: right; margin: 10px 0; }
-        
         .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; font-size: 1.1em; }
         .del-btn { color: #ff4d4d; cursor: pointer; font-weight: bold; padding: 5px 10px; font-size: 1.2em; }
-        
         input { width: 110px; padding: 10px; border: 2px solid #e8e0d9; border-radius: 10px; text-align: center; font-size: 1.3em; color: #d9534f; font-weight: bold; }
-        
-        /* 付款按鈕放大 */
         .pay-method { display: flex; gap: 15px; margin: 15px 0; }
         .m-btn { flex: 1; padding: 18px; border-radius: 12px; border: 2px solid #d1c7bc; background: white; font-weight: bold; font-size: 1.2em; cursor: pointer; text-align: center; }
         .m-btn.active { background: var(--accent-brown); color: white; border-color: var(--accent-brown); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
-        
-        /* 完成按鈕放大 */
         .done-btn { background: #6b8e23; color: white; border: none; width: 100%; padding: 20px; border-radius: 15px; font-size: 1.5em; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #55721c; }
         .done-btn:active { transform: translateY(2px); box-shadow: none; }
-        
         .log-area { margin-top: 10px; font-size: 1em; background: #f0eeeb; padding: 15px; border-radius: 15px; }
         #order-log { max-height: 200px; overflow-y: auto; margin-top: 10px; }
         .log-item { display: flex; justify-content: space-between; border-bottom: 1px solid #d1c7bc; padding: 8px 0; align-items: center; }
-
-        @media (max-width: 1024px) {
-            .main-content { flex-direction: row; } /* iPad 橫向保持並排 */
-        }
+        @media (max-width: 1024px) { .main-content { flex-direction: row; } }
     </style>
 </head>
 <body>
@@ -79,7 +58,10 @@
                 <button class="done-btn" onclick="submit()">✨ 完成結帳</button>
             </div>
             <div class="card log-area">
-                <strong>📝 今日成交紀錄</strong>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong>📝 今日成交紀錄</strong>
+                    <button onclick="if(confirm('要清空今日紀錄嗎？')){orderHistory=[]; saveLog(); renderLog();}" style="font-size:0.8em; cursor:pointer;">清空</button>
+                </div>
                 <div id="order-log">尚未有紀錄</div>
             </div>
         </div>
@@ -87,7 +69,9 @@
 
 <script>
     let payType = '現金';
-    let orderHistory = [];
+    // 優先讀取手機內的舊紀錄，如果沒有才是空陣列
+    let orderHistory = JSON.parse(localStorage.getItem('pos_orders')) || [];
+    
     const inventory = [
         { cat: "A 包包", items: [{n:"A01 針織(黃鬱金香)",p:79},{n:"A02 針織(米小白狗)",p:79},{n:"A03 波點小狗化妝包",p:99},{n:"A04 皺肩包(銀)",p:199},{n:"A05 皺肩包(藍)",p:199},{n:"A06 保齡球包(咖)",p:249},{n:"A07 豹紋小廢包(咖)",p:149},{n:"A08 皺肩包(銀斜胯)",p:199},{n:"A09 皺肩包(白斜胯)",p:199},{n:"A10 月牙腋下(黑)",p:199},{n:"A11 月牙腋下(白)",p:199},{n:"A12 雲朵迷你(白)",p:139},{n:"A13 雲朵迷你(黑)",p:139},{n:"A14 亮皮斜胯(黑)",p:249},{n:"A15 折疊化妝包(狗)",p:99},{n:"A16 卡其豹紋小方包",p:139},{n:"A17 編織月牙(粉紅)",p:199},{n:"A18 跳色月牙(米白)",p:199},{n:"A19 Y2K鍊條雙肩包",p:199},{n:"A20 JK日系郵差包",p:289},{n:"A21 漆皮法棍(黑)",p:199},{n:"A22 珍珠雙鍊(粉)",p:249},{n:"A23 珍珠雙鍊(白)",p:249},{n:"A24 方形腋下(黑)",p:199},{n:"A25 方形腋下(紅棕)",p:199},{n:"A26 大容量保齡球",p:289},{n:"A27 蕾絲後背(黑)",p:199},{n:"A28 蕾絲後背(粉)",p:199},{n:"A29 褶皺雲朵包",p:199},{n:"A30 針織(眼鏡狗)",p:139},{n:"A31 針織(紅格狗)",p:139}] },
         { cat: "B 小物", items: [{n:"B01 迷你磁吸小檯燈(藍色)",p:79},{n:"B02 迷你磁吸小檯燈(綠色)",p:79},{n:"B03 章魚暖光燈(藍色)",p:89},{n:"B04 章魚暖光燈(黃色)",p:89},{n:"B05 鬱金香封口夾(黃)",p:69},{n:"B06 鬱金香封口夾(粉)",p:69},{n:"B07 七層漢堡塑膠盤",p:129},{n:"B08 黃色眼睛化妝鏡",p:99},{n:"B09 粉色眼睛化妝鏡",p:99},{n:"B10 無毒軟頭丙烯馬克筆(12色)",p:99},{n:"B11 無毒軟頭丙烯馬克筆(48色)",p:259},{n:"B12 便利店存錢罐",p:159},{n:"B13 廣角鏡手機支架",p:99},{n:"B14 小麥麥耳機帽",p:89},{n:"B15 多巴胺計算機(黃)",p:99},{n:"B16 多巴胺計算機(紫)",p:99},{n:"B17 多巴胺計算機(白)",p:99},{n:"B18 雲朵鏡",p:49},{n:"B19 酪梨造型香氛蠟燭",p:99},{n:"B20 橘子造型香氛蠟燭",p:99},{n:"B21 聖誕樹香氛蠟燭(白)",p:99},{n:"B22 聖誕樹香氛蠟燭(綠)",p:99},{n:"B23 搞怪水果香氛蠟燭(柿子)",p:99},{n:"B24 搞怪水果香氛蠟燭(山竹)",p:99},{n:"B25 星星人手機氣囊(捧星)",p:59},{n:"B26 星星人手機氣囊(看星)",p:59},{n:"B27 無尾熊磁吸手機氣囊",p:79},{n:"B28 手提抱枕毯(夾心餅乾)",p:249},{n:"B29 手提抱枕毯(巧克力餅乾)",p:249},{n:"B30 胡蘿蔔錄音筆",p:69},{n:"B31 可頌掛勾",p:99}] },
@@ -109,6 +93,7 @@
             s.items.forEach(item => h += `<div class="p-btn" onclick="add('${item.n}', ${item.p})"><span class="p-name">${item.n}</span><span class="p-price">$${item.p}</span></div>`);
             area.innerHTML += h + `</div>`;
         });
+        renderLog(); // 初始化時讀取舊紀錄
     }
 
     function add(n,p) { cart.push({n,p}); render(); }
@@ -133,25 +118,55 @@
         document.getElementById('btn-cash').classList.toggle('active', type === '現金');
         document.getElementById('btn-card').classList.toggle('active', type === '電支');
     }
-    function submit() {
+
+    // --- 關鍵：傳送至 Google 與 儲存紀錄 ---
+    async function submit() {
         if(!cart.length) return;
         const total = document.getElementById('final-total').innerText;
-        const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        orderHistory.unshift({time, payType, total});
+        const orderDetails = cart.map(i => `${i.n}`).join(', '); // 整理品項名稱
+        const time = new Date().toLocaleString(); // 完整時間
+
+        // 1. 先顯示本地成功 (讓妳不用等網路傳完)
+        const displayTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        orderHistory.unshift({time: displayTime, payType, total});
+        saveLog();
         renderLog();
-        alert(`結帳成功！總金額: $${total}`);
-        cart = []; document.getElementById('discount').value = ''; document.getElementById('received').value = ''; render();
+
+        // 2. 背景傳送到 Google 表單
+        const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdX8Gk4YPPV05mSDKfL3gqSiXTZS8v47Qot180v0TgUpVbhQA/formResponse";
+        const formData = new URLSearchParams();
+        formData.append("entry.1017415494", `${orderDetails} (${payType})`); // 傳送到 點單內容
+        formData.append("entry.1481105934", total);   // 傳送到 總金額
+
+        try {
+            fetch(formUrl, { method: "POST", mode: "no-cors", body: formData });
+            alert(`結帳成功！\n總金額: $${total}\n紀錄已備份至雲端。`);
+        } catch (e) {
+            console.log("雲端備份失敗，但本地紀錄已儲存。");
+        }
+
+        // 3. 清空介面
+        cart = []; 
+        document.getElementById('discount').value = ''; 
+        document.getElementById('received').value = ''; 
+        render();
     }
+
+    function saveLog() {
+        localStorage.setItem('pos_orders', JSON.stringify(orderHistory));
+    }
+
     function renderLog() {
         const logArea = document.getElementById('order-log');
         if(!orderHistory.length) { logArea.innerHTML = "尚未有紀錄"; return; }
         logArea.innerHTML = orderHistory.map((order, idx) => `
             <div class="log-item">
                 <span style="font-size:1.1em;"><b>${order.time}</b> | ${order.payType} <span style="color:#d9534f;">$${order.total}</span></span>
-                <span class="del-btn" onclick="orderHistory.splice(${idx},1);renderLog()">作廢</span>
+                <span class="del-btn" onclick="if(confirm('確定要作廢這筆嗎？')){orderHistory.splice(${idx},1);saveLog();renderLog();}">作廢</span>
             </div>
         `).join('');
     }
+
     init();
 </script>
 </body>
