@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🧸 角落雜貨舖 POS 最終完整版</title>
+    <title>🧸 角落雜貨舖 POS 完整功能修正版</title>
     <style>
         :root { --main-brown: #b0a496; --bg-cream: #fcf8f5; --accent-brown: #8c7b6c; --price-red: #d9534f; --profit-green: #6b8e23; --cloud-blue: #5bc0de; }
         body { font-family: sans-serif; background: var(--bg-cream); margin: 0; display: flex; flex-direction: column; height: 100vh; color: #5d5246; overflow: hidden; }
@@ -20,14 +20,13 @@
         .p-stock { font-size: 0.65em; color: #999; }
         .checkout-area { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 320px; }
         .card { background: white; border-radius: 15px; padding: 12px; border: 2px solid #e8e0d9; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        #cart-list { max-height: 180px; overflow-y: auto; border-bottom: 2px dashed #e8e0d9; }
+        #cart-list { max-height: 150px; overflow-y: auto; border-bottom: 2px dashed #e8e0d9; }
         .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 5px; font-size: 0.85em; border-bottom: 1px solid #eee; }
         .big-input { font-size: 1.6em; padding: 10px; width: 100%; border-radius: 10px; border: 2px solid #d1c7bc; text-align: right; box-sizing: border-box; background: #fffcf5; font-weight: bold; }
         .total-display { font-size: 2.8em; font-weight: bold; color: var(--price-red); text-align: right; margin: 5px 0; }
         .pay-btn { flex: 1; padding: 15px; border-radius: 10px; border: 1px solid #ccc; background: white; cursor: pointer; font-weight: bold; font-size: 1.2em;}
         .pay-btn.active { background: var(--accent-brown); color: white; border-color: var(--accent-brown); }
 
-        /* 管理後台樣式 */
         #admin-panel { position: fixed; inset: 10px; background: white; z-index: 1000; border-radius: 20px; display: none; flex-direction: column; padding: 15px; border: 3px solid var(--main-brown); box-shadow: 0 0 50px rgba(0,0,0,0.3); }
         .admin-layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 15px; flex: 1; overflow: hidden; }
         .admin-controls { display: flex; gap: 10px; flex-wrap: wrap; background: #fdfaf0; padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eee; font-size: 0.85em; align-items: center; }
@@ -37,22 +36,22 @@
         th { background: #f4f4f4; position: sticky; top: 0; padding: 8px; border: 1px solid #ddd; z-index: 2; }
         td { padding: 5px; border: 1px solid #ddd; text-align: center; }
         .admin-input { width: 45px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
+        .del-x { color: red; font-weight: bold; cursor: pointer; padding: 0 8px; font-size: 1.2em; }
     </style>
 </head>
 <body>
 
-<header>🧸 角落雜貨舖 POS (最終修正版)</header>
+<header>🧸 角落雜貨舖 POS (完整修復版)</header>
 <div class="nav-bar" id="navbar"></div>
 
 <div class="main-content">
     <div class="item-area" id="item-area"></div>
     <div class="checkout-area">
         <div class="card">
-            <strong>🛒 當前清單 (庫存自動檢查中)</strong>
+            <strong>🛒 當前清單</strong>
             <div id="cart-list"></div>
             <div style="margin-top:10px;">
-                <label style="font-size:0.85em; font-weight:bold;">折扣 (-):</label>
-                <input type="number" id="discount" class="big-input" placeholder="0" oninput="calc()">
+                <input type="number" id="discount" class="big-input" placeholder="折扣金額" oninput="calc()">
             </div>
             <div class="total-display">$<span id="final-total">0</span></div>
             <div style="display:flex; gap:8px; margin-bottom:5px;">
@@ -70,23 +69,22 @@
 </div>
 
 <div style="padding:10px; text-align:center;">
-    <button onclick="toggleAdmin()" style="padding:10px 20px; border-radius:10px; cursor:pointer; background:white; border:2px solid var(--main-brown); font-weight:bold;">🛠️ 管理後台 / 單品統計 / 成本毛利</button>
+    <button onclick="toggleAdmin()" style="padding:10px 20px; border-radius:10px; cursor:pointer; background:white; border:2px solid var(--main-brown); font-weight:bold;">🛠️ 管理後台 / 單品統計</button>
 </div>
 
 <div id="admin-panel">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3>⚙️ 店舖管理 (已恢復利潤計算)</h3>
+        <h3>⚙️ 管理與今日統計</h3>
         <div>
-            <button class="pay-btn active" style="padding:5px 15px; font-size:0.9em;" onclick="exportDailyReport()">💾 匯出報表</button>
-            <button onclick="toggleAdmin()" style="padding:5px 15px; margin-left:10px;">✕ 關閉</button>
+            <button onclick="exportDailyReport()">💾 匯出報表</button>
+            <button onclick="toggleAdmin()" style="margin-left:10px;">✕ 關閉</button>
         </div>
     </div>
     
     <div class="admin-controls">
-        <strong>今日營收概況：</strong>
-        <span style="color:red; font-weight:bold; font-size:1.2em;">💰 營收: $<span id="stat-revenue">0</span></span>
-        <span style="color:green; font-weight:bold; font-size:1.2em; margin-left:15px;">📈 利潤: $<span id="stat-profit">0</span></span>
-        <button onclick="clearAllOrders()" style="margin-left:auto; color:gray; border:1px solid #ccc; background:white; border-radius:5px; font-size:10px;">清除今日點單</button>
+        <span style="color:red; font-weight:bold;">營收: $<span id="stat-revenue">0</span></span> | 
+        <span style="color:green; font-weight:bold;">利潤: $<span id="stat-profit">0</span></span>
+        <button onclick="clearAllOrders()" style="margin-left:auto; font-size:10px;">重置今日所有</button>
     </div>
 
     <div class="admin-layout">
@@ -96,9 +94,8 @@
                 <tbody id="admin-tbody"></tbody>
             </table>
         </div>
-        
         <div class="stat-container">
-            <h4 style="margin-top:0;">📦 今日各項銷售數量</h4>
+            <h4 style="margin-top:0;">📦 今日各項銷售統計</h4>
             <table style="background:white;">
                 <thead><tr style="background:#eee;"><th>品名</th><th>數量</th><th>小計</th></tr></thead>
                 <tbody id="stat-tbody"></tbody>
@@ -108,9 +105,8 @@
 </div>
 
 <script>
-    // 這裡請保留您原本完整的 fullInventory 陣列內容
-    let inv = JSON.parse(localStorage.getItem('pos_inv_final')) || []; 
-    // 注意：若第一次運行且無快取，請將完整資料貼回 inv 中
+    // 請在此處貼入您原本的完整商品清單資料 (inv)
+    let inv = JSON.parse(localStorage.getItem('pos_inv_final')) || [];
     
     let orders = JSON.parse(localStorage.getItem('pos_orders_final')) || [];
     let cart = [];
@@ -123,10 +119,8 @@
         inv.forEach((cat, idx) => {
             const hasStock = cat.items.some(it => it.s > 0);
             if (!hasStock) return;
-
             nav.innerHTML += `<div class="nav-btn" onclick="document.getElementById('c${idx}').scrollIntoView()">${cat.cat}</div>`;
             let gridHtml = `<div class="cat-title" id="c${idx}">${cat.cat}</div><div class="product-grid">`;
-            
             cat.items.forEach(it => {
                 if(it.s > 0) {
                     gridHtml += `<div class="p-btn" onclick="addCart('${it.id}')">
@@ -145,7 +139,7 @@
         let target = null;
         inv.forEach(c => c.items.forEach(i => { if(i.id === id) target = i; }));
         if(!target || target.s <= 0) return;
-        cart.push({...target}); // 這裡會連成本(c)一起複製
+        cart.push({...target});
         renderCart();
     }
 
@@ -178,9 +172,7 @@
     function submitOrder() {
         if(!cart.length) return;
         const total = Number(document.getElementById('final-total').innerText);
-        
-        // 核心修正：計算這張單的總成本
-        const orderTotalCost = cart.reduce((a,b)=> a + (b.c || 0), 0);
+        const cost = cart.reduce((a,b)=>a + (b.c || 0), 0);
         const orderItems = cart.map(i => ({id: i.id, n: i.n, p: i.p, c: i.c}));
 
         cart.forEach(item => {
@@ -192,15 +184,32 @@
             t: new Date().toLocaleTimeString(), 
             d: new Date().toLocaleDateString(), 
             total, 
-            profit: total - orderTotalCost, // 營收 - 成本
+            profit: total - cost, 
             pay: currentPay, 
             items: orderItems
         });
 
-        cart = []; 
-        document.getElementById('discount').value = ''; 
-        document.getElementById('cash-in').value = '';
-        save(); init(); renderCart(); alert("結帳完成！");
+        cart = []; document.getElementById('discount').value = ''; document.getElementById('cash-in').value = '';
+        save(); init(); alert("結帳完成！");
+    }
+
+    // --- 關鍵修復：單筆刪除功能 ---
+    function deleteOrder(orderId) {
+        if(!confirm("確定要取消這筆訂單嗎？")) return;
+        const idx = orders.findIndex(o => o.id === orderId);
+        if(idx === -1) return;
+        
+        const doRestore = confirm("是否歸還此訂單的商品庫存？");
+        if(doRestore) {
+            orders[idx].items.forEach(savedItem => {
+                inv.forEach(cat => cat.items.forEach(it => { if(it.id === savedItem.id) it.s++; }));
+            });
+        }
+        
+        orders.splice(idx, 1);
+        save();
+        init(); // 刷新首頁與統計
+        if(document.getElementById('admin-panel').style.display === 'flex') renderStatTable();
     }
 
     function updateLog() {
@@ -209,10 +218,11 @@
         document.getElementById('stat-revenue').innerText = tOrders.reduce((a,b)=>a+b.total, 0);
         document.getElementById('stat-profit').innerText = tOrders.reduce((a,b)=>a+b.profit, 0);
         
-        document.getElementById('order-log').innerHTML = "<strong>📋 最近交易</strong><hr>" + 
-            orders.slice(0,5).map(o => `
-                <div style="font-size:0.75em; border-bottom:1px solid #eee; padding:5px;">
-                    <b>$${o.total}</b> (利潤:$${o.profit}) <small>${o.t}</small>
+        document.getElementById('order-log').innerHTML = "<strong>📋 最近交易 (點擊 ✕ 刪除)</strong><hr>" + 
+            orders.slice(0,10).map(o => `
+                <div style="font-size:0.75em; border-bottom:1px solid #eee; padding:5px; display:flex; justify-content:space-between; align-items:center;">
+                    <div><b>$${o.total}</b> <small>${o.t}</small><br><span style="color:#888;">${o.items.length}件商品</span></div>
+                    <span class="del-x" onclick="deleteOrder(${o.id})">✕</span>
                 </div>
             `).join('');
     }
@@ -220,12 +230,7 @@
     function toggleAdmin() {
         const p = document.getElementById('admin-panel');
         p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
-        if(p.style.display === 'flex') {
-            renderAdminTable();
-            renderStatTable();
-        } else {
-            init();
-        }
+        if(p.style.display === 'flex') { renderAdminTable(); renderStatTable(); } else { init(); }
     }
 
     function renderStatTable() {
@@ -243,7 +248,7 @@
         for(let name in summary) {
             html += `<tr><td style="text-align:left;">${name}</td><td>${summary[name].count}</td><td>$${summary[name].total}</td></tr>`;
         }
-        document.getElementById('stat-tbody').innerHTML = html || '<tr><td colspan="3">今日尚無銷售</td></tr>';
+        document.getElementById('stat-tbody').innerHTML = html || '<tr><td colspan="3">尚無數據</td></tr>';
     }
 
     function renderAdminTable() {
@@ -263,10 +268,18 @@
     }
 
     function editInv(ci, ii, key, v) { inv[ci].items[ii][key] = Number(v); save(); }
-    function clearAllOrders() { if(confirm("確定重置？")) { orders = []; save(); updateLog(); renderStatTable(); } }
+    function clearAllOrders() { if(confirm("重置所有交易？")) { orders = []; save(); init(); } }
     function save() { 
         localStorage.setItem('pos_inv_final', JSON.stringify(inv)); 
         localStorage.setItem('pos_orders_final', JSON.stringify(orders)); 
+    }
+    function exportDailyReport() {
+        let csv = "時間,金額,利潤,品項\n";
+        orders.filter(o=>o.d===new Date().toLocaleDateString()).forEach(o => {
+            csv += `${o.t},${o.total},${o.profit},"${o.items.map(i=>i.n).join('|')}"\n`;
+        });
+        const blob = new Blob(["\uFEFF"+csv], {type:'text/csv'});
+        const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='報表.csv'; a.click();
     }
     init();
 </script>
