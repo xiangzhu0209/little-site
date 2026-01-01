@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🧸 角落雜貨舖 POS 完整整合版</title>
+    <title>🧸 角落雜貨舖 POS 終極整合版</title>
     <style>
-        :root { --main-brown: #b0a496; --bg-cream: #fcf8f5; --accent-brown: #8c7b6c; --price-red: #d9534f; --profit-green: #6b8e23; }
+        :root { --main-brown: #b0a496; --bg-cream: #fcf8f5; --accent-brown: #8c7b6c; --price-red: #d9534f; --profit-green: #6b8e23; --cloud-blue: #5bc0de; }
         body { font-family: sans-serif; background: var(--bg-cream); margin: 0; display: flex; flex-direction: column; height: 100vh; color: #5d5246; overflow: hidden; }
         header { background: var(--main-brown); color: white; padding: 12px; text-align: center; font-size: 1.3em; font-weight: bold; flex-shrink: 0; }
         .nav-bar { background: #e8e0d9; padding: 10px; display: flex; gap: 10px; overflow-x: auto; border-bottom: 2px solid #d1c7bc; flex-shrink: 0; }
@@ -20,18 +20,24 @@
         .p-stock { font-size: 0.65em; color: #999; }
         .checkout-area { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 320px; }
         .card { background: white; border-radius: 15px; padding: 12px; border: 2px solid #e8e0d9; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        #cart-list { max-height: 200px; overflow-y: auto; border-bottom: 2px dashed #e8e0d9; }
+        #cart-list { max-height: 180px; overflow-y: auto; border-bottom: 2px dashed #e8e0d9; }
         .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 5px; font-size: 0.85em; border-bottom: 1px solid #eee; }
         .big-input { font-size: 1.6em; padding: 10px; width: 100%; border-radius: 10px; border: 2px solid #d1c7bc; text-align: right; box-sizing: border-box; background: #fffcf5; font-weight: bold; }
         .total-display { font-size: 2.8em; font-weight: bold; color: var(--price-red); text-align: right; margin: 5px 0; }
         .pay-btn { flex: 1; padding: 15px; border-radius: 10px; border: 1px solid #ccc; background: white; cursor: pointer; font-weight: bold; font-size: 1.2em;}
         .pay-btn.active { background: var(--accent-brown); color: white; border-color: var(--accent-brown); }
+
+        /* 管理後台樣式 */
         #admin-panel { position: fixed; inset: 10px; background: white; z-index: 1000; border-radius: 20px; display: none; flex-direction: column; padding: 15px; border: 3px solid var(--main-brown); box-shadow: 0 0 50px rgba(0,0,0,0.3); }
+        .admin-controls { display: flex; gap: 10px; flex-wrap: wrap; background: #fdfaf0; padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eee; font-size: 0.9em; align-items: center; }
         .admin-table-container { flex: 1; overflow: auto; margin-top: 10px; }
         table { width: 100%; border-collapse: collapse; font-size: 0.8em; }
-        th { background: #f4f4f4; position: sticky; top: 0; padding: 8px; border: 1px solid #ddd; }
+        th { background: #f4f4f4; position: sticky; top: 0; padding: 8px; border: 1px solid #ddd; z-index: 2; }
         td { padding: 5px; border: 1px solid #ddd; text-align: center; }
-        .admin-input { width: 50px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
+        .admin-input { width: 60px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
+        .sort-btn { cursor: pointer; padding: 2px 5px; background: #eee; border-radius: 3px; font-size: 12px; margin: 0 2px; border: 1px solid #ccc; }
+        .btn-add { background: var(--profit-green); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-cloud { background: var(--cloud-blue); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -45,192 +51,221 @@
         <div class="card">
             <strong>🛒 當前清單 (僅顯示有庫存品項)</strong>
             <div id="cart-list"></div>
-            <div style="margin-top:15px;">
-                <label style="font-size:0.9em; font-weight:bold;">折扣金額 (-):</label>
+            <div style="margin-top:10px;">
+                <label style="font-size:0.85em; font-weight:bold;">折扣金額 (-):</label>
                 <input type="number" id="discount" class="big-input" placeholder="0" oninput="calc()">
             </div>
             <div class="total-display">$<span id="final-total">0</span></div>
-            <div style="display:flex; gap:8px; margin:10px 0;">
+            <div style="display:flex; gap:8px; margin-bottom:5px;">
                 <button class="pay-btn active" id="btn-cash" onclick="setPay('現金')">💵 現金</button>
                 <button class="pay-btn" id="btn-elec" onclick="setPay('電支')">📱 電支</button>
             </div>
-            <div style="background:#fdfaf0; padding:12px; border-radius:12px;">
-                <label style="font-size:0.9em; font-weight:bold;">實收現金:</label>
-                <input type="number" id="cash-in" class="big-input" style="background:#fff;" placeholder="0" oninput="calcChange()"> 
-                <div style="text-align:right; margin-top:10px;">找零: <span id="cash-change" style="font-weight:bold; color:red; font-size:1.5em;">0</span></div>
+            <div style="background:#fdfaf0; padding:10px; border-radius:12px;">
+                <input type="number" id="cash-in" class="big-input" placeholder="實收金額" oninput="calcChange()"> 
+                <div style="text-align:right; margin-top:5px;">找零: <span id="cash-change" style="font-weight:bold; color:red; font-size:1.4em;">0</span></div>
             </div>
-            <button onclick="submitOrder()" style="width:100%; padding:18px; margin-top:15px; background:var(--profit-green); color:white; border:none; border-radius:12px; font-weight:bold; font-size:1.3em;">結帳完成</button>
+            <button onclick="submitOrder()" style="width:100%; padding:15px; margin-top:10px; background:var(--profit-green); color:white; border:none; border-radius:12px; font-weight:bold; font-size:1.3em;">結帳完成</button>
         </div>
         <div class="card" style="flex:1; overflow-y:auto;" id="order-log"></div>
     </div>
 </div>
 
-<div style="padding:10px; text-align:center;"><button onclick="toggleAdmin()">🛠️ 管理後台 (營收/修改價格/庫存)</button></div>
+<div style="padding:10px; text-align:center;">
+    <button onclick="toggleAdmin()" style="padding:10px 20px; border-radius:10px; cursor:pointer; background:white; border:2px solid var(--main-brown); font-weight:bold;">🛠️ 管理後台 / 收攤報表匯出</button>
+</div>
 
 <div id="admin-panel">
-    <div style="display:flex; justify-content:space-between;"><h3>⚙️ 店舖管理後台</h3><button onclick="toggleAdmin()">✕</button></div>
-    <div style="display:flex; gap:20px; margin-bottom:10px; padding:10px; background:#f9f9f9; border-radius:10px;">
-        <div style="color:red;">今日營收: $<span id="stat-revenue">0</span></div>
-        <div style="color:green;">今日利潤: $<span id="stat-profit">0</span></div>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3>⚙️ 店舖管理與結賬匯出</h3>
+        <button onclick="toggleAdmin()" style="padding:5px 15px;">✕ 關閉</button>
     </div>
+    
+    <div class="admin-controls" style="background:#eef7fa;">
+        <strong>📦 收攤上傳：</strong>
+        <button class="btn-cloud" onclick="exportDailyReport()">💾 下載今日報表 (CSV)</button>
+        <button class="btn-cloud" style="background:var(--accent-brown);" onclick="exportInventory()">☁️ 備份全店資料 (JSON)</button>
+    </div>
+
+    <div class="admin-controls">
+        <strong>➕ 新增品項：</strong>
+        <select id="new-cat-select" style="padding:5px;"></select>
+        <input type="text" id="new-id" placeholder="編號" style="width:60px;">
+        <input type="text" id="new-name" placeholder="品名" style="width:100px;">
+        <input type="number" id="new-cost" placeholder="成本" style="width:50px;">
+        <input type="number" id="new-price" placeholder="售價" style="width:50px;">
+        <input type="number" id="new-stock" placeholder="庫存" style="width:50px;">
+        <button class="btn-add" onclick="addNewProduct()">加入品項</button>
+        <button class="btn-add" style="background:var(--main-brown);" onclick="addNewCategory()">新增類別</button>
+    </div>
+
+    <div style="display:flex; gap:20px; margin:5px 0; padding:10px; background:#f9f9f9; border-radius:10px;">
+        <div style="color:red; font-weight:bold;">今日營收: $<span id="stat-revenue">0</span></div>
+        <div style="color:green; font-weight:bold;">今日利潤: $<span id="stat-profit">0</span></div>
+    </div>
+
     <div class="admin-table-container">
         <table>
-            <thead><tr><th>編號</th><th>品名</th><th>成本</th><th>售價</th><th>庫存</th></tr></thead>
+            <thead><tr><th>排序</th><th>編號</th><th>品名</th><th>成本</th><th>售價</th><th>庫存</th><th>操作</th></tr></thead>
             <tbody id="admin-tbody"></tbody>
         </table>
     </div>
 </div>
 
 <script>
+    // 完整品項清單 - 絕對不刪減！
     const fullInventory = [
-        { cat: "A 包包區", items: [ {id:"A01", n:"針織托特包(黃鬱金香)", c:15, p:79, s:2}, {id:"A02", n:"針織托特包(米色小白狗)", c:15, p:79, s:2}, {id:"A03", n:"波點小狗化妝包", c:30, p:99, s:2}, {id:"A04", n:"ins蝴蝶結皺肩包(銀)", c:85, p:199, s:0, dis:true}, {id:"A05", n:"Ins蝴蝶結皺肩包(藍)", c:85, p:199, s:0, dis:true}, {id:"A06", n:"復古手提保齡球包(咖)", c:100, p:249, s:1}, {id:"A07", n:"豹紋手提小廢包(咖)", c:80, p:149, s:1}, {id:"A08", n:"素面斜跨皺肩包", c:90, p:199, s:1}, {id:"A09", n:"素面斜肩包(白)", c:90, p:199, s:1}, {id:"A10", n:"法式月牙腋下包(黑)", c:85, p:199, s:1}, {id:"A11", n:"法式月牙腋下包(白)", c:85, p:199, s:2}, {id:"A12", n:"雲朵迷你手提包(白)", c:70, p:139, s:2}, {id:"A13", n:"雲朵迷你手提包(黑)", c:70, p:139, s:2}, {id:"A14", n:"復古亮皮手提斜跨包(黑)", c:140, p:249, s:1}, {id:"A15", n:"小狗折疊化妝包", c:55, p:100, s:8}, {id:"A16", n:"卡其豹紋小方包", c:55, p:139, s:1}, {id:"A17", n:"編織月牙腋下包(粉紅)", c:95, p:199, s:1}, {id:"A18", n:"法式跳色月牙腋下包(米白)", c:70, p:199, s:2}, {id:"A19", n:"Y2K鍊條雙肩包", c:90, p:199, s:1}, {id:"A20", n:"JK風日系郵差包(咖)", c:120, p:289, s:1}, {id:"A21", n:"漆皮法棍腋下包(黑)", c:90, p:199, s:2}, {id:"A22", n:"珍珠雙鍊條腋下包(粉)", c:65, p:249, s:1}, {id:"A23", n:"珍珠雙鏈條腋下包(白)", c:65, p:249, s:1}, {id:"A24", n:"法國小眾方形腋下包(黑)", c:60, p:199, s:2}, {id:"A25", n:"法國小眾方形腋下包(紅棕)", c:60, p:199, s:2}, {id:"A26", n:"大容量保齡球包(咖)", c:80, p:289, s:1}, {id:"A27", n:"蕾絲花邊後背包(黑)", c:70, p:199, s:1}, {id:"A28", n:"蕾絲花邊後背包(粉)", c:70, p:199, s:1}, {id:"A29", n:"韓系簡約褶皺雲朵包", c:65, p:199, s:1}, {id:"A30", n:"針織提手包(眼鏡狗)", c:65, p:139, s:2}, {id:"A31", n:"針織提手包(紅格狗)", c:65, p:139, s:2} ]},
-        { cat: "B 生活小物", items: [ {id:"B01", n:"迷你磁吸小檯燈(藍)", c:30, p:79, s:3}, {id:"B02", n:"迷你磁吸小檯燈(綠)", c:30, p:79, s:3}, {id:"B03", n:"章魚暖光燈(藍)", c:40, p:89, s:2}, {id:"B04", n:"章魚暖光燈(黃)", c:40, p:89, s:2}, {id:"B05", n:"鬱金香封口夾(黃)", c:15, p:69, s:2}, {id:"B06", n:"鬱金香封口夾(粉)", c:15, p:69, s:2}, {id:"B07", n:"七層漢堡塑膠盤", c:35, p:129, s:2}, {id:"B08", n:"黃色眼睛化妝鏡", c:25, p:99, s:2}, {id:"B09", n:"粉色眼睛化妝鏡", c:25, p:99, s:2}, {id:"B10", n:"丙烯馬克筆(12色)", c:40, p:99, s:2}, {id:"B11", n:"丙烯馬克筆(48色)", c:150, p:259, s:1}, {id:"B12", n:"便利店存錢罐", c:85, p:159, s:1}, {id:"B13", n:"廣角鏡手機支架", c:40, p:99, s:6}, {id:"B14", n:"小麥麥耳機帽", c:30, p:89, s:0, dis:true}, {id:"B15", n:"多巴胺計算機(黃)", c:45, p:99, s:1}, {id:"B16", n:"多巴胺計算機(紫)", c:45, p:99, s:1}, {id:"B17", n:"多巴胺計算機(白)", c:45, p:99, s:1}, {id:"B18", n:"雲朵鏡", c:15, p:49, s:1}, {id:"B19", n:"酪梨香氛蠟燭", c:20, p:99, s:4}, {id:"B20", n:"橘子香氛蠟燭", c:30, p:99, s:2}, {id:"B21", n:"聖誕樹蠟燭(白)", c:35, p:99, s:2}, {id:"B22", n:"聖誕樹蠟燭(綠)", c:35, p:99, s:2}, {id:"B23", n:"柿子香氛蠟燭", c:45, p:99, s:4}, {id:"B24", n:"山竹香氛蠟燭", c:45, p:99, s:4}, {id:"B25", n:"星星人手機氣囊(摔)", c:10, p:59, s:2}, {id:"B26", n:"星星人手機氣囊(看)", c:10, p:59, s:2}, {id:"B27", n:"無尾熊磁吸氣囊", c:28, p:79, s:2}, {id:"B28", n:"手提抱枕毯(餅乾)", c:135, p:249, s:1}, {id:"B29", n:"手提抱枕毯(巧克力)", c:135, p:249, s:0, dis:true}, {id:"B30", n:"胡蘿蔔錄音筆", c:30, p:69, s:4}, {id:"B31", n:"可頌掛勾", c:65, p:99, s:8} ]},
+        { cat: "A 包包區", items: [ {id:"A01", n:"針織托特包(黃鬱金香)", c:15, p:79, s:2}, {id:"A02", n:"針織托特包(米色小白狗)", c:15, p:79, s:2}, {id:"A03", n:"波點小狗化妝包", c:30, p:99, s:2}, {id:"A04", n:"ins蝴蝶結皺肩包(銀)", c:85, p:199, s:0}, {id:"A05", n:"Ins蝴蝶結皺肩包(藍)", c:85, p:199, s:0}, {id:"A06", n:"復古手提保齡球包(咖)", c:100, p:249, s:1}, {id:"A07", n:"豹紋手提小廢包(咖)", c:80, p:149, s:1}, {id:"A08", n:"素面斜跨皺肩包", c:90, p:199, s:1}, {id:"A09", n:"素面斜肩包(白)", c:90, p:199, s:1}, {id:"A10", n:"法式月牙腋下包(黑)", c:85, p:199, s:1}, {id:"A11", n:"法式月牙腋下包(白)", c:85, p:199, s:2}, {id:"A12", n:"雲朵迷你手提包(白)", c:70, p:139, s:2}, {id:"A13", n:"雲朵迷你手提包(黑)", c:70, p:139, s:2}, {id:"A14", n:"復古亮皮手提斜跨包(黑)", c:140, p:249, s:1}, {id:"A15", n:"小狗折疊化妝包", c:55, p:100, s:8}, {id:"A16", n:"卡其豹紋小方包", c:55, p:139, s:1}, {id:"A17", n:"編織月牙腋下包(粉紅)", c:95, p:199, s:1}, {id:"A18", n:"法式跳色月牙腋下包(米白)", c:70, p:199, s:2}, {id:"A19", n:"Y2K鍊條雙肩包", c:90, p:199, s:1}, {id:"A20", n:"JK風日系郵差包(咖)", c:120, p:289, s:1}, {id:"A21", n:"漆皮法棍腋下包(黑)", c:90, p:199, s:2}, {id:"A22", n:"珍珠雙鍊條腋下包(粉)", c:65, p:249, s:1}, {id:"A23", n:"珍珠雙鏈條腋下包(白)", c:65, p:249, s:1}, {id:"A24", n:"法國小眾方形腋下包(黑)", c:60, p:199, s:2}, {id:"A25", n:"法國小眾方形腋下包(紅棕)", c:60, p:199, s:2}, {id:"A26", n:"大容量保齡球包(咖)", c:80, p:289, s:1}, {id:"A27", n:"蕾絲花邊後背包(黑)", c:70, p:199, s:1}, {id:"A28", n:"蕾絲花邊後背包(粉)", c:70, p:199, s:1}, {id:"A29", n:"韓系簡約褶皺雲朵包", c:65, p:199, s:1}, {id:"A30", n:"針織提手包(眼鏡狗)", c:65, p:139, s:2}, {id:"A31", n:"針織提手包(紅格狗)", c:65, p:139, s:2} ]},
+        { cat: "B 生活小物", items: [ {id:"B01", n:"迷你磁吸小檯燈(藍)", c:30, p:79, s:3}, {id:"B02", n:"迷你磁吸小檯燈(綠)", c:30, p:79, s:3}, {id:"B03", n:"章魚暖光燈(藍)", c:40, p:89, s:2}, {id:"B04", n:"章魚暖光燈(黃)", c:40, p:89, s:2}, {id:"B05", n:"鬱金香封口夾(黃)", c:15, p:69, s:2}, {id:"B06", n:"鬱金香封口夾(粉)", c:15, p:69, s:2}, {id:"B07", n:"七層漢堡塑膠盤", c:35, p:129, s:2}, {id:"B08", n:"黃色眼睛化妝鏡", c:25, p:99, s:2}, {id:"B09", n:"粉色眼睛化妝鏡", c:25, p:99, s:2}, {id:"B10", n:"丙烯馬克筆(12色)", c:40, p:99, s:2}, {id:"B11", n:"丙烯馬克筆(48色)", c:150, p:259, s:1}, {id:"B12", n:"便利店存錢罐", c:85, p:159, s:1}, {id:"B13", n:"廣角鏡手機支架", c:40, p:99, s:6}, {id:"B14", n:"小麥麥耳機帽", c:30, p:89, s:0}, {id:"B15", n:"多巴胺計算機(黃)", c:45, p:99, s:1}, {id:"B16", n:"多巴胺計算機(紫)", c:45, p:99, s:1}, {id:"B17", n:"多巴胺計算機(白)", c:45, p:99, s:1}, {id:"B18", n:"雲朵鏡", c:15, p:49, s:1}, {id:"B19", n:"酪梨香氛蠟燭", c:20, p:99, s:4}, {id:"B20", n:"橘子香氛蠟燭", c:30, p:99, s:2}, {id:"B21", n:"聖誕樹蠟燭(白)", c:35, p:99, s:2}, {id:"B22", n:"聖誕樹蠟燭(綠)", c:35, p:99, s:2}, {id:"B23", n:"柿子香氛蠟燭", c:45, p:99, s:4}, {id:"B24", n:"山竹香氛蠟燭", c:45, p:99, s:4}, {id:"B25", n:"星星人手機氣囊(摔)", c:10, p:59, s:2}, {id:"B26", n:"星星人手機氣囊(看)", c:10, p:59, s:2}, {id:"B27", n:"無尾熊磁吸氣囊", c:28, p:79, s:2}, {id:"B28", n:"手提抱枕毯(餅乾)", c:135, p:249, s:1}, {id:"B29", n:"手提抱枕毯(巧克力)", c:135, p:249, s:0}, {id:"B30", n:"胡蘿蔔錄音筆", c:30, p:69, s:4}, {id:"B31", n:"可頌掛勾", c:65, p:99, s:8} ]},
         { cat: "C 織品區", items: [ {id:"C01", n:"雨傘擦手巾", c:20, p:79, s:1}, {id:"C02", n:"紅色蘑菇手巾", c:21, p:79, s:2}, {id:"C03", n:"藍帽子小狗手巾", c:33, p:99, s:2}, {id:"C04", n:"麥當貓擦手巾", c:38, p:99, s:1}, {id:"C05", n:"海星擦手巾", c:33, p:99, s:2}, {id:"C06", n:"水母擦手巾", c:33, p:99, s:2}, {id:"C07", n:"加大可愛狗手巾", c:33, p:129, s:2}, {id:"C08", n:"加大可愛熊手巾", c:33, p:129, s:1}, {id:"C09", n:"加大可愛豬手巾", c:33, p:129, s:1}, {id:"C10", n:"咖啡小狗擦手巾", c:15, p:99, s:2}, {id:"C11", n:"麵包狗手巾", c:18, p:99, s:1}, {id:"C12", n:"袋子狗手巾", c:18, p:99, s:2}, {id:"C13", n:"背包狗手巾", c:18, p:99, s:2}, {id:"C14", n:"線條狗手巾", c:30, p:99, s:1}, {id:"C16", n:"洋蔥小狗手巾", c:20, p:99, s:1}, {id:"C17", n:"橘子小狗手巾", c:20, p:99, s:2}, {id:"C18", n:"吐舌頭粉紅狗", c:22, p:99, s:2}, {id:"C19", n:"帽子長耳狗", c:22, p:99, s:2} ]},
-        { cat: "D 髮飾館", items: [ {id:"D01", n:"磨砂樹脂無痕夾(黑)", c:20, p:49, s:2}, {id:"D02", n:"磨砂樹脂無痕夾(白)", c:20, p:49, s:2}, {id:"D03", n:"波紋奶糖鯊魚夾", c:30, p:69, s:1}, {id:"D04", n:"花邊小髮圈(黑)", c:10, p:29, s:3}, {id:"D05", n:"布面豹紋無痕夾", c:30, p:69, s:0, dis:true}, {id:"D06", n:"藍色格子櫻桃花朵圖", c:35, p:79, s:1}, {id:"D07", n:"藍色櫻桃條紋大腸圈", c:30, p:69, s:1}, {id:"D08", n:"毛毛鯊魚夾(淺咖)", c:25, p:69, s:1}, {id:"D09", n:"毛毛鯊魚夾(深棕)", c:25, p:69, s:1}, {id:"D10", n:"愛心鑽無痕夾", c:45, p:69, s:1}, {id:"D11", n:"絨面愛心水滴bb夾(白)", c:33, p:69, s:1}, {id:"D12", n:"絨面愛心水滴bb夾(豹紋)", c:33, p:69, s:1}, {id:"D13", n:"蝴蝶結格子對夾", c:22, p:69, s:3}, {id:"D14", n:"布面豹紋花苞圈", c:36, p:79, s:1}, {id:"D15", n:"紅邊灰髮圈", c:35, p:79, s:1}, {id:"D16", n:"藍條紋奶油花邊大腸圈", c:30, p:79, s:1}, {id:"D17", n:"菱紋咖色無痕夾", c:18, p:49, s:1}, {id:"D18", n:"白色水波紋無痕夾", c:18, p:49, s:1}, {id:"D19", n:"橢圓蝴蝶結夾(銀)", c:28, p:69, s:1}, {id:"D20", n:"橢圓蝴蝶結夾(白)", c:28, p:69, s:1}, {id:"D21", n:"大號豹紋鯊魚夾(咖)", c:25, p:69, s:2}, {id:"D22", n:"醋酸金標無痕夾(黑)", c:35, p:79, s:1}, {id:"D23", n:"醋酸金標無痕夾(白)", c:35, p:79, s:1}, {id:"D24", n:"珍珠蝴蝶結無痕夾(銀)", c:30, p:79, s:2}, {id:"D25", n:"韓系黑邊斜紋花邊", c:35, p:79, s:1}, {id:"D26", n:"格紋扇形鯊魚夾", c:35, p:79, s:2}, {id:"D27", n:"黑邊格紋收腰圈", c:25, p:69, s:1}, {id:"D28", n:"蝴蝶結咖色格紋三節圈", c:28, p:79, s:1}, {id:"D29", n:"春天色蕾絲大腸圈", c:25, p:79, s:1}, {id:"D30", n:"春天色水滴bb夾", c:28, p:69, s:1}, {id:"D31", n:"彈力髮圈罐裝(奶咖)", c:10, p:49, s:2}, {id:"D32", n:"彈力髮圈罐裝(黑色)", c:10, p:49, s:2}, {id:"D33", n:"水滴BB夾(10入)", c:5, p:29, s:8}, {id:"D34", n:"大號豹紋鯊魚夾(灰)", c:25, p:69, s:2}, {id:"D35", n:"珍珠櫻桃無痕夾", c:30, p:79, s:3}, {id:"D36", n:"格紋櫻桃無痕夾", c:25, p:69, s:1}, {id:"D37", n:"素咖+豹紋(橢圓夾)", c:25, p:59, s:1}, {id:"D38", n:"素咖+豹紋(水滴夾)", c:25, p:59, s:1}, {id:"D39", n:"素咖+豹紋(愛心夾)", c:25, p:59, s:1} ]},
+        { cat: "D 髮飾館", items: [ {id:"D01", n:"磨砂樹脂無痕夾(黑)", c:20, p:49, s:2}, {id:"D02", n:"磨砂樹脂無痕夾(白)", c:20, p:49, s:2}, {id:"D03", n:"波紋奶糖鯊魚夾", c:30, p:69, s:1}, {id:"D04", n:"花邊小髮圈(黑)", c:10, p:29, s:3}, {id:"D05", n:"布面豹紋無痕夾", c:30, p:69, s:0}, {id:"D06", n:"藍色格子櫻桃花朵圖", c:35, p:79, s:1}, {id:"D07", n:"藍色櫻桃條紋大腸圈", c:30, p:69, s:1}, {id:"D08", n:"毛毛鯊魚夾(淺咖)", c:25, p:69, s:1}, {id:"D09", n:"毛毛鯊魚夾(深棕)", c:25, p:69, s:1}, {id:"D10", n:"愛心鑽無痕夾", c:45, p:69, s:1}, {id:"D11", n:"絨面愛心水滴bb夾(白)", c:33, p:69, s:1}, {id:"D12", n:"絨面愛心水滴bb夾(豹紋)", c:33, p:69, s:1}, {id:"D13", n:"蝴蝶結格子對夾", c:22, p:69, s:3}, {id:"D14", n:"布面豹紋花苞圈", c:36, p:79, s:1}, {id:"D15", n:"紅邊灰髮圈", c:35, p:79, s:1}, {id:"D16", n:"藍條紋奶油花邊大腸圈", c:30, p:79, s:1}, {id:"D17", n:"菱紋咖色無痕夾", c:18, p:49, s:1}, {id:"D18", n:"白色水波紋無痕夾", c:18, p:49, s:1}, {id:"D19", n:"橢圓蝴蝶結夾(銀)", c:28, p:69, s:1}, {id:"D20", n:"橢圓蝴蝶結夾(白)", c:28, p:69, s:1}, {id:"D21", n:"大號豹紋鯊魚夾(咖)", c:25, p:69, s:2}, {id:"D22", n:"醋酸金標無痕夾(黑)", c:35, p:79, s:1}, {id:"D23", n:"醋酸金標無痕夾(白)", c:35, p:79, s:1}, {id:"D24", n:"珍珠蝴蝶結無痕夾(銀)", c:30, p:79, s:2}, {id:"D25", n:"韓系黑邊斜紋花邊", c:35, p:79, s:1}, {id:"D26", n:"格紋扇形鯊魚夾", c:35, p:79, s:2}, {id:"D27", n:"黑邊格紋收腰圈", c:25, p:69, s:1}, {id:"D28", n:"蝴蝶結咖色格紋三節圈", c:28, p:79, s:1}, {id:"D29", n:"春天色蕾絲大腸圈", c:25, p:79, s:1}, {id:"D30", n:"春天色水滴bb夾", c:28, p:69, s:1}, {id:"D31", n:"彈力髮圈罐裝(奶咖)", c:10, p:49, s:2}, {id:"D32", n:"彈力髮圈罐裝(黑色)", c:10, p:49, s:2}, {id:"D33", n:"水滴BB夾(10入)", c:5, p:29, s:8}, {id:"D34", n:"大號豹紋鯊魚夾(灰)", c:25, p:69, s:2}, {id:"D35", n:"珍珠櫻桃無痕夾", c:30, p:79, s:3}, {id:"D36", n:"格紋櫻桃無痕夾", c:25, p:69, s:1}, {id:"D37", n:"素咖+豹紋(橢圓夾)", c:25, p:59, s:1}, {id:"D38", n:"素咖+豹紋(水滴夾)", c:25, p:59, s:1}, {id:"D39", n:"素咖+豹紋(愛心夾)", c:25, p:59, s:1} ]},
         { cat: "E 娃娃/掛件", items: [ {id:"E01", n:"畫家西高地(咖)", c:60, p:99, s:2}, {id:"E02", n:"畫家西高地(藍)", c:60, p:99, s:1}, {id:"E03", n:"畫家西高地(紅)", c:60, p:99, s:1}, {id:"E04", n:"畫家西高地(粉)", c:60, p:99, s:1}, {id:"E05", n:"白雪公主裝扮西高地", c:75, p:129, s:2}, {id:"E06", n:"小香風装扮西高地", c:75, p:129, s:1}, {id:"E07", n:"胡蘿蔔裝扮西高地", c:73, p:129, s:11}, {id:"E08", n:"搞怪長毛小怪獸(粉)", c:90, p:199, s:1}, {id:"E09", n:"搞怪長毛小怪獸(紫)", c:90, p:199, s:1}, {id:"E10", n:"麥當貓叔叔小掛件", c:12, p:39, s:3}, {id:"E11", n:"麥當貓小掛件", c:12, p:39, s:3}, {id:"E12", n:"圓點小狗小掛件", c:15, p:49, s:3}, {id:"E13", n:"鬱金香掛件(黃)", c:12, p:39, s:3}, {id:"E15", n:"鬱金香掛件(粉)", c:12, p:39, s:3}, {id:"E16", n:"搞怪醜萌花朵", c:13, p:49, s:5}, {id:"E17", n:"裝扮怕洽狗", c:38, p:79, s:3}, {id:"E18", n:"薑餅人掛件", c:15, p:39, s:2}, {id:"E19", n:"聖誕樹掛件", c:15, p:39, s:3}, {id:"E20", n:"千里眼小強", c:10, p:39, s:2}, {id:"E21", n:"墨鏡小強", c:10, p:39, s:1}, {id:"E22", n:"抽拉兔子(藍)", c:60, p:129, s:2}, {id:"E23", n:"抽拉兔子(黃)", c:60, p:129, s:1}, {id:"E24", n:"一條狗", c:42, p:99, s:5} ]},
         { cat: "F 服飾配件", items: [ {id:"F01", n:"愛心兔子中筒襪", c:20, p:59, s:2}, {id:"F02", n:"紅帽小狗中筒襪", c:18, p:59, s:1}, {id:"F03", n:"立體貓咪蛋蛋襪", c:10, p:49, s:3}, {id:"F04", n:"波點小狗長筒襪", c:8, p:49, s:2}, {id:"F05", n:"EGG刺繡麻花中筒襪", c:25, p:69, s:2}, {id:"F06", n:"刺繡中筒襪(蝴蝶結狗)", c:25, p:69, s:2}, {id:"F07", n:"加厚加絨長襪(臘腸狗)", c:20, p:59, s:2}, {id:"F08", n:"波點花邊長筒(深咖)", c:25, p:69, s:2}, {id:"F09", n:"波點花邊長筒(奶油白)", c:25, p:69, s:2}, {id:"F10", n:"珊瑚絨掌門狗(白藍)", c:27, p:69, s:2}, {id:"F11", n:"珊瑚絨掌門狗(白咖)", c:27, p:69, s:1}, {id:"F12", n:"藍色蝴蝶結中筒襪", c:25, p:69, s:2}, {id:"F13", n:"羊毛刺繡堆堆襪(帽子狗)", c:25, p:69, s:4}, {id:"F14", n:"粉色兔子中筒襪", c:23, p:59, s:2}, {id:"F15", n:"點點紗中筒襪", c:23, p:59, s:2}, {id:"F16", n:"飛機狗隱形襪(深灰)", c:20, p:49, s:2}, {id:"F17", n:"飛機狗隱形襪(奶白)", c:20, p:49, s:2}, {id:"F18", n:"飛機狗隱形襪(米色)", c:20, p:49, s:2}, {id:"F19", n:"虞書欣同款圍巾", c:70, p:199, s:2}, {id:"F20", n:"四色咖啡色格子圍巾", c:75, p:199, s:2}, {id:"F21", n:"大紅蘋果圍巾", c:65, p:199, s:1}, {id:"F22", n:"仿羊毛咖啡格圍巾", c:85, p:239, s:2}, {id:"F23", n:"仿羊毛豹紋圍巾", c:80, p:239, s:2} ]},
-        { cat: "G 居家餐廚", items: [ 
-            {id:"G01", n:"316不鏽鋼冰壩杯600ml", c:130, p:239, s:3}, {id:"G02", n:"木柄湯匙+叉子組", c:55, p:99, s:2}, {id:"G03", n:"鴨鴨湯匙+叉子組", c:50, p:99, s:3}, {id:"G04", n:"珍珠湯匙+叉子組", c:55, p:99, s:5}, {id:"G05", n:"奶酪湯匙+叉子組", c:58, p:99, s:4}, {id:"G06", n:"卡皮巴拉合金筷(太陽花)", c:25, p:59, s:5}, {id:"G07", n:"卡皮巴拉合金筷(青梨)", c:25, p:59, s:5}, {id:"G08", n:"可可豆8.5吋草帽盤", c:128, p:239, s:2}, {id:"G09", n:"6.5寸心型碗", c:75, p:159, s:2}, {id:"G10", n:"6吋甜品碟(快樂小狗)", c:57, p:139, s:3}, {id:"G11", n:"5.5吋樹屋碗", c:85, p:189, s:1}, {id:"G12", n:"8吋薯條盤", c:40, p:99, s:2}, {id:"G13", n:"小狗造型盤", c:50, p:129, s:2}, {id:"G14", n:"小熊造型盤", c:50, p:129, s:2}, {id:"G15", n:"奶酪醬料碟", c:30, p:49, s:2}, {id:"G16", n:"吐司造型盤", c:105, p:189, s:2}, {id:"G17", n:"法棍造型盤", c:105, p:189, s:2}, {id:"G18", n:"圍巾小狗馬克杯", c:45, p:99, s:1}, {id:"G19", n:"圍巾小貓馬克杯", c:45, p:99, s:1}, {id:"G20", n:"踩水小狗碟碟杯", c:50, p:129, s:2}, {id:"G21", n:"蘋果小狗碟碟杯", c:50, p:129, s:2}, {id:"G22", n:"吸管馬克杯(棕女孩)", c:70, p:159, s:2}, {id:"G23", n:"吸管馬克杯(波點狗)", c:70, p:159, s:2}, {id:"G24", n:"吸管馬克杯(波點象)", c:70, p:159, s:1}, {id:"G25", n:"吸管馬克杯(棕男孩)", c:75, p:159, s:2}, {id:"G26", n:"吸管馬克杯(波點貓)", c:75, p:159, s:2}, {id:"G27", n:"吸管馬克杯(塗鴉兔)", c:74, p:159, s:2}, {id:"G28", n:"9吋珠邊深盤(綠)", c:95, p:179, s:2}, {id:"G29", n:"海派甜心9吋深盤", c:111, p:189, s:2}, {id:"G30", n:"小羊8吋圓盤", c:53, p:139, s:2}, {id:"G31", n:"小狗醬料蝶(棕)", c:36, p:79, s:2}, {id:"G32", n:"小狗醬料蝶(白)", c:36, p:79, s:2}, {id:"G33", n:"喝水鴨醬料碟", c:26, p:79, s:2}, {id:"G34", n:"復古咖啡杯碟組", c:136, p:239, s:2}, {id:"G35", n:"直條吸管杯(棕套)", c:43, p:99, s:2}, {id:"G36", n:"直條吸管杯(綠套)", c:43, p:99, s:2}
-        ]},
-        { cat: "H 節慶文具", items: [ 
-            {id:"H1", n:"馬年大吉紅包(5入)", c:6, p:39, s:5}, {id:"H2", n:"財源廣進紅包(5入)", c:6, p:39, s:5}, {id:"H3", n:"卡通蘋果福紅包(5入)", c:6, p:39, s:5}, {id:"H4", n:"燙金麻將馬紅包(5入)", c:7, p:39, s:5}, {id:"H5", n:"燙金馬上有錢(5入)", c:7, p:39, s:5}, {id:"H6", n:"燙金滿版馬(5入)", c:7, p:39, s:5}, {id:"H7", n:"Q版開開心心(5入)", c:6, p:39, s:5}, {id:"H8", n:"Q版馬力全開(5入)", c:6, p:39, s:5}, {id:"H9", n:"Q版馬上錢花(5入)", c:6, p:39, s:5}, {id:"H10", n:"書法新年快樂(5入)", c:8, p:39, s:2}, {id:"H11", n:"書法平安喜樂(5入)", c:8, p:39, s:2}, {id:"H12", n:"書法大吉大利(5入)", c:8, p:39, s:2}, {id:"H13", n:"多巴胺水果(6入)", c:8, p:49, s:3}, {id:"H14", n:"多巴胺小馬(6入)", c:9, p:49, s:2}, {id:"H15", n:"塗鴉水果系列(6入)", c:6, p:49, s:2}, {id:"H16", n:"卡通水果系列(6入)", c:9, p:49, s:3}, {id:"H17", n:"卡通小馬系列(6入)", c:9, p:49, s:3}, {id:"H18", n:"精神小馬系列(6入)", c:13, p:49, s:3}, {id:"H19", n:"蠟筆小新系列(6入)", c:22, p:59, s:2}, {id:"H20", n:"三麗鷗系列(6入)", c:22, p:59, s:2}
-        ]}
+        { cat: "G 居家餐廚", items: [ {id:"G01", n:"316不鏽鋼冰壩杯600ml", c:130, p:239, s:3}, {id:"G02", n:"木柄湯匙+叉子組", c:55, p:99, s:2}, {id:"G03", n:"鴨鴨湯匙+叉子組", c:50, p:99, s:3}, {id:"G04", n:"珍珠湯匙+叉子組", c:55, p:99, s:5}, {id:"G05", n:"奶酪湯匙+叉子組", c:58, p:99, s:4}, {id:"G06", n:"卡皮巴拉合金筷(太陽花)", c:25, p:59, s:5}, {id:"G07", n:"卡皮巴拉合金筷(青梨)", c:25, p:59, s:5}, {id:"G08", n:"可可豆8.5吋草帽盤", c:128, p:239, s:2}, {id:"G09", n:"6.5寸心型碗", c:75, p:159, s:2}, {id:"G10", n:"6吋甜品碟(快樂小狗)", c:57, p:139, s:3}, {id:"G11", n:"5.5吋樹屋碗", c:85, p:189, s:1}, {id:"G12", n:"8吋薯條盤", c:40, p:99, s:2}, {id:"G13", n:"小狗造型盤", c:50, p:129, s:2}, {id:"G14", n:"小熊造型盤", c:50, p:129, s:2}, {id:"G15", n:"奶酪醬料碟", c:30, p:49, s:2}, {id:"G16", n:"吐司造型盤", c:105, p:189, s:2}, {id:"G17", n:"法棍造型盤", c:105, p:189, s:2}, {id:"G18", n:"圍巾小狗馬克杯", c:45, p:99, s:1}, {id:"G19", n:"圍巾小貓馬克杯", c:45, p:99, s:1}, {id:"G20", n:"踩水小狗碟碟杯", c:50, p:129, s:2}, {id:"G21", n:"蘋果小狗碟碟杯", c:50, p:129, s:2}, {id:"G22", n:"吸管馬克杯(棕女孩)", c:70, p:159, s:2}, {id:"G23", n:"吸管馬克杯(波點狗)", c:70, p:159, s:2}, {id:"G24", n:"吸管馬克杯(波點象)", c:70, p:159, s:1}, {id:"G25", n:"吸管馬克杯(棕男孩)", c:75, p:159, s:2}, {id:"G26", n:"吸管馬克杯(波點貓)", c:75, p:159, s:2}, {id:"G27", n:"吸管馬克杯(塗鴉兔)", c:74, p:159, s:2}, {id:"G28", n:"9吋珠邊深盤(綠)", c:95, p:179, s:2}, {id:"G29", n:"海派甜心9吋深盤", c:111, p:189, s:2}, {id:"G30", n:"小羊8吋圓盤", c:53, p:139, s:2}, {id:"G31", n:"小狗醬料蝶(棕)", c:36, p:79, s:2}, {id:"G32", n:"小狗醬料蝶(白)", c:36, p:79, s:2}, {id:"G33", n:"喝水鴨醬料碟", c:26, p:79, s:2}, {id:"G34", n:"復古咖啡杯碟組", c:136, p:239, s:2}, {id:"G35", n:"直條吸管杯(棕套)", c:43, p:99, s:2}, {id:"G36", n:"直條吸管杯(綠套)", c:43, p:99, s:2} ]},
+        { cat: "H 節慶文具", items: [ {id:"H1", n:"馬年大吉紅包(5入)", c:6, p:39, s:5}, {id:"H2", n:"財源廣進紅包(5入)", c:6, p:39, s:5}, {id:"H3", n:"卡通蘋果福紅包(5入)", c:6, p:39, s:5}, {id:"H4", n:"燙金麻將馬紅包(5入)", c:7, p:39, s:5}, {id:"H5", n:"燙金馬上有錢(5入)", c:7, p:39, s:5}, {id:"H6", n:"燙金滿版馬(5入)", c:7, p:39, s:5}, {id:"H7", n:"Q版開開心心(5入)", c:6, p:39, s:5}, {id:"H8", n:"Q版馬力全開(5入)", c:6, p:39, s:5}, {id:"H9", n:"Q版馬上錢花(5入)", c:6, p:39, s:5}, {id:"H10", n:"書法新年快樂(5入)", c:8, p:39, s:2}, {id:"H11", n:"書法平安喜樂(5入)", c:8, p:39, s:2}, {id:"H12", n:"書法大吉大利(5入)", c:8, p:39, s:2}, {id:"H13", n:"多巴胺水果(6入)", c:8, p:49, s:3}, {id:"H14", n:"多巴胺小馬(6入)", c:9, p:49, s:2}, {id:"H15", n:"塗鴉水果系列(6入)", c:6, p:49, s:2}, {id:"H16", n:"卡通水果系列(6入)", c:9, p:49, s:3}, {id:"H17", n:"卡通小馬系列(6入)", c:9, p:49, s:3}, {id:"H18", n:"精神小馬系列(6入)", c:13, p:49, s:3}, {id:"H19", n:"蠟筆小新系列(6入)", c:22, p:59, s:2}, {id:"H20", n:"三麗鷗系列(6入)", c:22, p:59, s:2} ]}
     ];
 
-    let inv = JSON.parse(localStorage.getItem('pos_inv_v2')) || fullInventory;
-    let orders = JSON.parse(localStorage.getItem('pos_orders_v2')) || [];
+    let inv = JSON.parse(localStorage.getItem('pos_inv_final')) || fullInventory;
+    let orders = JSON.parse(localStorage.getItem('pos_orders_final')) || [];
     let cart = [];
     let currentPay = '現金';
 
     function init() {
-        const area = document.getElementById('item-area'), nav = document.getElementById('navbar');
-        area.innerHTML = ''; nav.innerHTML = '';
-
+        const area = document.getElementById('item-area'), nav = document.getElementById('navbar'), catSelect = document.getElementById('new-cat-select');
+        area.innerHTML = ''; nav.innerHTML = ''; catSelect.innerHTML = '';
+        
         inv.forEach((cat, idx) => {
+            catSelect.innerHTML += `<option value="${idx}">${cat.cat}</option>`;
             const cid = 'c' + idx;
-            // 檢查該類別是否有「可顯示」的品項
-            const visibleItems = cat.items.filter(it => !it.dis && it.s > 0);
-            
-            if (visibleItems.length > 0) {
-                // 新增導覽按鈕
-                nav.innerHTML += `<div class="nav-btn" onclick="document.getElementById('${cid}').scrollIntoView()">${cat.cat}</div>`;
-                
-                let grid = `<div class="cat-title" id="${cid}">${cat.cat}</div><div class="product-grid">`;
-                visibleItems.forEach(it => {
+            nav.innerHTML += `<div class="nav-btn" onclick="document.getElementById('${cid}').scrollIntoView()">${cat.cat}</div>`;
+            let grid = `<div class="cat-title" id="${cid}">${cat.cat}</div><div class="product-grid">`;
+            cat.items.forEach(it => {
+                if(it.s > 0) {
                     grid += `<div class="p-btn" onclick="addCart('${it.id}')">
                         <div class="p-name">${it.id} ${it.n}</div>
                         <div class="p-price">$${it.p}</div>
                         <div class="p-stock">存:${it.s}</div>
                     </div>`;
-                });
-                area.innerHTML += grid + '</div>';
-            }
+                }
+            });
+            area.innerHTML += grid + '</div>';
         });
         updateLog();
     }
 
+    // POS 操作與結帳邏輯
     function addCart(id) {
         let target = null;
         inv.forEach(c => c.items.forEach(i => { if(i.id === id) target = i; }));
-        if(target.s <= 0) return alert("庫存不足");
+        if(!target || target.s <= 0) return alert("庫存不足");
         cart.push({id: target.id, n: target.n, p: target.p, c: target.c});
         renderCart();
     }
-
     function renderCart() {
         document.getElementById('cart-list').innerHTML = cart.map((it, i) => `
             <div class="cart-item"><span>${it.id} ${it.n}</span><b>$${it.p}</b><span onclick="cart.splice(${i},1);renderCart()" style="color:red; cursor:pointer;">✕</span></div>
         `).join('');
         calc();
     }
-
     function calc() {
         const sub = cart.reduce((a,b)=>a+b.p, 0);
         const disc = Number(document.getElementById('discount').value || 0);
         document.getElementById('final-total').innerText = Math.max(0, sub - disc);
         calcChange();
     }
-
     function calcChange() {
-        const change = Number(document.getElementById('cash-in').value || 0) - Number(document.getElementById('final-total').innerText);
-        document.getElementById('cash-change').innerText = change > 0 ? change : 0;
+        const total = Number(document.getElementById('final-total').innerText);
+        const pay = Number(document.getElementById('cash-in').value || 0);
+        document.getElementById('cash-change').innerText = pay > total ? pay - total : 0;
     }
-
     function setPay(m) {
         currentPay = m;
         document.getElementById('btn-cash').className = m==='現金'?'pay-btn active':'pay-btn';
         document.getElementById('btn-elec').className = m==='電支'?'pay-btn active':'pay-btn';
     }
-
     function submitOrder() {
         if(!cart.length) return;
         const total = Number(document.getElementById('final-total').innerText);
         const cost = cart.reduce((a,b)=>a+b.c, 0);
-        
-        // 扣除庫存
         cart.forEach(item => {
-            inv.forEach(cat => cat.items.forEach(it => {
-                if(it.id === item.id) it.s--;
-            }));
+            inv.forEach(cat => cat.items.forEach(it => { if(it.id === item.id) it.s--; }));
         });
-
-        orders.unshift({ 
-            t: new Date().toLocaleTimeString(), 
-            d: new Date().toLocaleDateString(), 
-            total, 
-            profit: total-cost, 
-            detail: `[${currentPay}] `+cart.map(i=>i.id).join(',') 
-        });
-
-        cart = []; 
-        document.getElementById('discount').value = ''; 
-        document.getElementById('cash-in').value = '';
-        save(); 
-        init(); // 重新 init 以更新介面（若庫存變 0 則會自動消失）
-        renderCart();
-        alert("結帳成功！");
+        orders.unshift({ t: new Date().toLocaleTimeString(), d: new Date().toLocaleDateString(), total, profit: total-cost, pay: currentPay, items: cart.map(i=>i.id).join(',') });
+        cart = []; document.getElementById('discount').value = ''; document.getElementById('cash-in').value = '';
+        save(); init(); renderCart(); alert("結帳成功！");
     }
-
     function updateLog() {
         const today = new Date().toLocaleDateString();
         const tOrders = orders.filter(o => o.d === today);
         document.getElementById('stat-revenue').innerText = tOrders.reduce((a,b)=>a+b.total, 0);
         document.getElementById('stat-profit').innerText = tOrders.reduce((a,b)=>a+b.profit, 0);
-        document.getElementById('order-log').innerHTML = "<strong>📋 最近交易</strong><hr>" + orders.slice(0,10).map(o => `<div style="font-size:0.75em; border-bottom:1px solid #eee; padding:5px;"><b>$${o.total}</b> (利:${o.profit}) <small>${o.t}</small></div>`).join('');
+        document.getElementById('order-log').innerHTML = "<strong>📋 最近交易</strong><hr>" + orders.slice(0,10).map(o => `<div style="font-size:0.75em; border-bottom:1px solid #eee; padding:5px;"><b>$${o.total}</b> <small>${o.t} (${o.pay})</small></div>`).join('');
     }
 
+    // 管理後台擴充功能
     function toggleAdmin() {
         const p = document.getElementById('admin-panel');
         p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
-        if(p.style.display === 'flex') {
-            document.getElementById('admin-tbody').innerHTML = inv.flatMap(c => c.items).map(it => `
-                <tr>
-                    <td>${it.id}</td>
-                    <td>${it.n}</td>
-                    <td><input type="number" class="admin-input" value="${it.c}" onchange="editItem('${it.id}','c',this.value)"></td>
-                    <td><input type="number" class="admin-input" value="${it.p}" onchange="editItem('${it.id}','p',this.value)"></td>
-                    <td><input type="number" class="admin-input" value="${it.s}" onchange="editItem('${it.id}','s',this.value)"></td>
-                </tr>
-            `).join('');
-        } else { init(); }
+        if(p.style.display === 'flex') renderAdminTable();
+        else init();
+    }
+    function renderAdminTable() {
+        let html = '';
+        inv.forEach((cat, cIdx) => {
+            html += `<tr style="background:#f4f4f4; font-weight:bold;"><td colspan="6" style="text-align:left; padding-left:10px;">📂 ${cat.cat}</td><td><button onclick="delCat(${cIdx})">刪類</button></td></tr>`;
+            cat.items.forEach((it, iIdx) => {
+                html += `<tr>
+                <td><span class="sort-btn" onclick="moveItem(${cIdx},${iIdx},-1)">▲</span><span class="sort-btn" onclick="moveItem(${cIdx},${iIdx},1)">▼</span></td>
+                <td>${it.id}</td><td>${it.n}</td>
+                <td><input type="number" class="admin-input" value="${it.c}" onchange="editItem(${cIdx},${iIdx},'c',this.value)"></td>
+                <td><input type="number" class="admin-input" value="${it.p}" onchange="editItem(${cIdx},${iIdx},'p',this.value)"></td>
+                <td><input type="number" class="admin-input" value="${it.s}" onchange="editItem(${cIdx},${iIdx},'s',this.value)"></td>
+                <td><button onclick="delItem(${cIdx},${iIdx})">刪</button></td></tr>`;
+            });
+        });
+        document.getElementById('admin-tbody').innerHTML = html;
+    }
+    function addNewProduct() {
+        const ci = document.getElementById('new-cat-select').value;
+        const id = document.getElementById('new-id').value, n = document.getElementById('new-name').value;
+        if(!id || !n) return alert("請填寫編號與品名");
+        inv[ci].items.push({ id, n, c: Number(document.getElementById('new-cost').value||0), p: Number(document.getElementById('new-price').value||0), s: Number(document.getElementById('new-stock').value||0) });
+        save(); renderAdminTable();
+    }
+    function addNewCategory() {
+        const name = prompt("輸入新類別名稱");
+        if(name) { inv.push({ cat: name, items: [] }); save(); init(); renderAdminTable(); }
+    }
+    function moveItem(ci, ii, dir) {
+        const arr = inv[ci].items;
+        if(ii+dir >= 0 && ii+dir < arr.length) { [arr[ii], arr[ii+dir]] = [arr[ii+dir], arr[ii]]; save(); renderAdminTable(); }
+    }
+    function editItem(ci, ii, f, v) { inv[ci].items[ii][f] = Number(v); save(); }
+    function delItem(ci, ii) { if(confirm("確定刪除？")) { inv[ci].items.splice(ii,1); save(); renderAdminTable(); } }
+    function delCat(ci) { if(confirm("確定刪除整個類別？")) { inv.splice(ci,1); save(); init(); renderAdminTable(); } }
+
+    // 收攤雲端備份
+    function exportDailyReport() {
+        const today = new Date().toLocaleDateString();
+        const tOrders = orders.filter(o => o.d === today);
+        let csv = "時間,金額,利潤,付款方式,品項\n";
+        tOrders.forEach(o => { csv += `${o.t},${o.total},${o.profit},${o.pay},${o.items}\n`; });
+        const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute("download", `今日報表_${today}.csv`);
+        link.click();
+    }
+    function exportInventory() {
+        const data = { inv, orders, time: new Date().toLocaleString() };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute("download", `全店備份_${new Date().toLocaleDateString()}.json`);
+        link.click();
+        alert("備份完成！請將檔案存至雲端。");
     }
 
-    function editItem(id, field, val) {
-        inv.forEach(c => c.items.forEach(i => { 
-            if(i.id === id) {
-                i[field] = Number(val);
-                // 如果手動改庫存為 0，或標記停售，init 時會自動隱藏
-                if(field === 's' && i.s <= 0) i.dis = false; 
-            }
-        }));
-        save();
-    }
-
-    function save() {
-        localStorage.setItem('pos_inv_v2', JSON.stringify(inv));
-        localStorage.setItem('pos_orders_v2', JSON.stringify(orders));
-    }
-
+    function save() { localStorage.setItem('pos_inv_final', JSON.stringify(inv)); localStorage.setItem('pos_orders_final', JSON.stringify(orders)); }
     init();
 </script>
 </body>
