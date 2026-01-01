@@ -152,11 +152,10 @@
         updateLog();
     }
 
-    // POS 操作與結帳邏輯
     function addCart(id) {
         let target = null;
         inv.forEach(c => c.items.forEach(i => { if(i.id === id) target = i; }));
-        if(!target || target.s <= 0) return alert("庫存不足");
+        if(!target || target.s <= 0) return alert("庫庫不足");
         cart.push({id: target.id, n: target.n, p: target.p, c: target.c});
         renderCart();
     }
@@ -182,17 +181,56 @@
         document.getElementById('btn-cash').className = m==='現金'?'pay-btn active':'pay-btn';
         document.getElementById('btn-elec').className = m==='電支'?'pay-btn active':'pay-btn';
     }
+
+    // --- 升級後的結帳邏輯（含雲端同步） ---
     function submitOrder() {
         if(!cart.length) return;
+        
+        // 您的 Google Apps Script 網址
+        const CLOUD_URL = 'https://script.google.com/macros/s/AKfycbw1-YmTHhed-kdWfDto9aNLroRAjoBTTz19Bee9jg_dlHWAfN6zb5llE8YrTm2zPVj8/exec';
+
         const total = Number(document.getElementById('final-total').innerText);
         const cost = cart.reduce((a,b)=>a+b.c, 0);
+        const itemString = cart.map(i => i.id + " " + i.n).join(', ');
+
+        const orderData = {
+            total: total,
+            pay: currentPay,
+            items: itemString
+        };
+
+        // 1. 減少本機庫存
         cart.forEach(item => {
             inv.forEach(cat => cat.items.forEach(it => { if(it.id === item.id) it.s--; }));
         });
-        orders.unshift({ t: new Date().toLocaleTimeString(), d: new Date().toLocaleDateString(), total, profit: total-cost, pay: currentPay, items: cart.map(i=>i.id).join(',') });
-        cart = []; document.getElementById('discount').value = ''; document.getElementById('cash-in').value = '';
-        save(); init(); renderCart(); alert("結帳成功！");
+
+        // 2. 異步傳送到 Google 試算表
+        fetch(CLOUD_URL, {
+            method: 'POST',
+            mode: 'no-cors', 
+            body: JSON.stringify(orderData)
+        });
+
+        // 3. 儲存至本機歷史紀錄
+        orders.unshift({ 
+            t: new Date().toLocaleTimeString(), 
+            d: new Date().toLocaleDateString(), 
+            total, 
+            profit: total-cost, 
+            pay: currentPay, 
+            items: itemString 
+        });
+
+        // 4. 重設介面
+        cart = []; 
+        document.getElementById('discount').value = ''; 
+        document.getElementById('cash-in').value = '';
+        save(); 
+        init(); 
+        renderCart(); 
+        alert("結帳成功！資料已同步至雲端硬碟。");
     }
+
     function updateLog() {
         const today = new Date().toLocaleDateString();
         const tOrders = orders.filter(o => o.d === today);
@@ -243,7 +281,6 @@
     function delItem(ci, ii) { if(confirm("確定刪除？")) { inv[ci].items.splice(ii,1); save(); renderAdminTable(); } }
     function delCat(ci) { if(confirm("確定刪除整個類別？")) { inv.splice(ci,1); save(); init(); renderAdminTable(); } }
 
-    // 收攤雲端備份
     function exportDailyReport() {
         const today = new Date().toLocaleDateString();
         const tOrders = orders.filter(o => o.d === today);
