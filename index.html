@@ -38,7 +38,8 @@
         .sort-btn { cursor: pointer; padding: 2px 5px; background: #eee; border-radius: 3px; font-size: 12px; margin: 0 2px; border: 1px solid #ccc; }
         .btn-add { background: var(--profit-green); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .btn-cloud { background: var(--cloud-blue); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .del-log-btn { color: #d9534f; cursor: pointer; font-weight: bold; margin-left: 10px; border: 1px solid #d9534f; padding: 0 4px; border-radius: 4px; }
+        .del-log-btn { color: #d9534f; cursor: pointer; font-weight: bold; margin-left: 10px; border: 1px solid #d9534f; padding: 0 6px; border-radius: 4px; background: #fff; }
+        .del-log-btn:hover { background: #fdf2f2; }
     </style>
 </head>
 <body>
@@ -50,7 +51,7 @@
     <div class="item-area" id="item-area"></div>
     <div class="checkout-area">
         <div class="card">
-            <strong>🛒 當前清單 (僅顯示有庫存品項)</strong>
+            <strong>🛒 當前清單</strong>
             <div id="cart-list"></div>
             <div style="margin-top:10px;">
                 <label style="font-size:0.85em; font-weight:bold;">折扣金額 (-):</label>
@@ -114,7 +115,7 @@
 </div>
 
 <script>
-    // 品項資料庫
+    // 預設資料庫
     const fullInventory = [
         { cat: "A 包包區", items: [ {id:"A01", n:"針織托特包(黃鬱金香)", c:15, p:79, s:2}, {id:"A02", n:"針織托特包(米色小白狗)", c:15, p:79, s:2}, {id:"A03", n:"波點小狗化妝包", c:30, p:99, s:2}, {id:"A04", n:"ins蝴蝶結皺肩包(銀)", c:85, p:199, s:0}, {id:"A05", n:"Ins蝴蝶結皺肩包(藍)", c:85, p:199, s:0}, {id:"A06", n:"復古手提保齡球包(咖)", c:100, p:249, s:1}, {id:"A07", n:"豹紋手提小廢包(咖)", c:80, p:149, s:1}, {id:"A08", n:"素面斜跨皺肩包", c:90, p:199, s:1}, {id:"A09", n:"素面斜肩包(白)", c:90, p:199, s:1}, {id:"A10", n:"法式月牙腋下包(黑)", c:85, p:199, s:1}, {id:"A11", n:"法式月牙腋下包(白)", c:85, p:199, s:2}, {id:"A12", n:"雲朵迷你手提包(白)", c:70, p:139, s:2}, {id:"A13", n:"雲朵迷你手提包(黑)", c:70, p:139, s:2}, {id:"A14", n:"復古亮皮手提斜跨包(黑)", c:140, p:249, s:1}, {id:"A15", n:"小狗折疊化妝包", c:55, p:100, s:8}, {id:"A16", n:"卡其豹紋小方包", c:55, p:139, s:1}, {id:"A17", n:"編織月牙腋下包(粉紅)", c:95, p:199, s:1}, {id:"A18", n:"法式跳色月牙腋下包(米白)", c:70, p:199, s:2}, {id:"A19", n:"Y2K鍊條雙肩包", c:90, p:199, s:1}, {id:"A20", n:"JK風日系郵差包(咖)", c:120, p:289, s:1}, {id:"A21", n:"漆皮法棍腋下包(黑)", c:90, p:199, s:2}, {id:"A22", n:"珍珠雙鍊條腋下包(粉)", c:65, p:249, s:1}, {id:"A23", n:"珍珠雙鏈條腋下包(白)", c:65, p:249, s:1}, {id:"A24", n:"法國小眾方形腋下包(黑)", c:60, p:199, s:2}, {id:"A25", n:"法國小眾方形腋下包(紅棕)", c:60, p:199, s:2}, {id:"A26", n:"大容量保齡球包(咖)", c:80, p:289, s:1}, {id:"A27", n:"蕾絲花邊後背包(黑)", c:70, p:199, s:1}, {id:"A28", n:"蕾絲花邊後背包(粉)", c:70, p:199, s:1}, {id:"A29", n:"韓系簡約褶皺雲朵包", c:65, p:199, s:1}, {id:"A30", n:"針織提手包(眼鏡狗)", c:65, p:139, s:2}, {id:"A31", n:"針織提手包(紅格狗)", c:65, p:139, s:2} ]},
         { cat: "B 生活小物", items: [ {id:"B01", n:"迷你磁吸小檯燈(藍)", c:30, p:79, s:3}, {id:"B02", n:"迷你磁吸小檯燈(綠)", c:30, p:79, s:3}, {id:"B03", n:"章魚暖光燈(藍)", c:40, p:89, s:2}, {id:"B04", n:"章魚暖光燈(黃)", c:40, p:89, s:2}, {id:"B05", n:"鬱金香封口夾(黃)", c:15, p:69, s:2}, {id:"B06", n:"鬱金香封口夾(粉)", c:15, p:69, s:2}, {id:"B07", n:"七層漢堡塑膠盤", c:35, p:129, s:2}, {id:"B08", n:"黃色眼睛化妝鏡", c:25, p:99, s:2}, {id:"B09", n:"粉色眼睛化妝鏡", c:25, p:99, s:2}, {id:"B10", n:"丙烯馬克筆(12色)", c:40, p:99, s:2}, {id:"B11", n:"丙烯馬克筆(48色)", c:150, p:259, s:1}, {id:"B12", n:"便利店存錢罐", c:85, p:159, s:1}, {id:"B13", n:"廣角鏡手機支架", c:40, p:99, s:6}, {id:"B14", n:"小麥麥耳機帽", c:30, p:89, s:0}, {id:"B15", n:"多巴胺計算機(黃)", c:45, p:99, s:1}, {id:"B16", n:"多巴胺計算機(紫)", c:45, p:99, s:1}, {id:"B17", n:"多巴胺計算機(白)", c:45, p:99, s:1}, {id:"B18", n:"雲朵鏡", c:15, p:49, s:1}, {id:"B19", n:"酪梨香氛蠟燭", c:20, p:99, s:4}, {id:"B20", n:"橘子香氛蠟燭", c:30, p:99, s:2}, {id:"B21", n:"聖誕樹蠟燭(白)", c:35, p:99, s:2}, {id:"B22", n:"聖誕樹蠟燭(綠)", c:35, p:99, s:2}, {id:"B23", n:"柿子香氛蠟燭", c:45, p:99, s:4}, {id:"B24", n:"山竹香氛蠟燭", c:45, p:99, s:4}, {id:"B25", n:"星星人手機氣囊(摔)", c:10, p:59, s:2}, {id:"B26", n:"星星人手機氣囊(看)", c:10, p:59, s:2}, {id:"B27", n:"無尾熊磁吸氣囊", c:28, p:79, s:2}, {id:"B28", n:"手提抱枕毯(餅乾)", c:135, p:249, s:1}, {id:"B29", n:"手提抱枕毯(巧克力)", c:135, p:249, s:0}, {id:"B30", n:"胡蘿蔔錄音筆", c:30, p:69, s:4}, {id:"B31", n:"可頌掛勾", c:65, p:99, s:8} ]},
@@ -141,13 +142,11 @@
             nav.innerHTML += `<div class="nav-btn" onclick="document.getElementById('${cid}').scrollIntoView()">${cat.cat}</div>`;
             let grid = `<div class="cat-title" id="${cid}">${cat.cat}</div><div class="product-grid">`;
             cat.items.forEach(it => {
-                if(it.s > 0) {
-                    grid += `<div class="p-btn" onclick="addCart('${it.id}')">
-                        <div class="p-name">${it.id} ${it.n}</div>
-                        <div class="p-price">$${it.p}</div>
-                        <div class="p-stock">存:${it.s}</div>
-                    </div>`;
-                }
+                grid += `<div class="p-btn" onclick="addCart('${it.id}')" style="${it.s <= 0 ? 'opacity:0.4' : ''}">
+                    <div class="p-name">${it.id} ${it.n}</div>
+                    <div class="p-price">$${it.p}</div>
+                    <div class="p-stock">存:${it.s}</div>
+                </div>`;
             });
             area.innerHTML += grid + '</div>';
         });
@@ -157,27 +156,32 @@
     function addCart(id) {
         let target = null;
         inv.forEach(c => c.items.forEach(i => { if(i.id === id) target = i; }));
-        if(!target || target.s <= 0) return alert("庫庫不足");
+        if(!target) return;
+        if(target.s <= 0) return alert("庫存不足！");
         cart.push({id: target.id, n: target.n, p: target.p, c: target.c});
         renderCart();
     }
+
     function renderCart() {
         document.getElementById('cart-list').innerHTML = cart.map((it, i) => `
-            <div class="cart-item"><span>${it.id} ${it.n}</span><b>$${it.p}</b><span onclick="cart.splice(${i},1);renderCart()" style="color:red; cursor:pointer;">✕</span></div>
+            <div class="cart-item"><span>${it.id} ${it.n}</span><b>$${it.p}</b><span onclick="cart.splice(${i},1);renderCart()" style="color:red; cursor:pointer; padding:0 5px;">✕</span></div>
         `).join('');
         calc();
     }
+
     function calc() {
         const sub = cart.reduce((a,b)=>a+b.p, 0);
         const disc = Number(document.getElementById('discount').value || 0);
         document.getElementById('final-total').innerText = Math.max(0, sub - disc);
         calcChange();
     }
+
     function calcChange() {
         const total = Number(document.getElementById('final-total').innerText);
         const pay = Number(document.getElementById('cash-in').value || 0);
         document.getElementById('cash-change').innerText = pay > total ? pay - total : 0;
     }
+
     function setPay(m) {
         currentPay = m;
         document.getElementById('btn-cash').className = m==='現金'?'pay-btn active':'pay-btn';
@@ -189,21 +193,21 @@
         
         const total = Number(document.getElementById('final-total').innerText);
         const cost = cart.reduce((a,b)=>a+b.c, 0);
-        const itemsToSave = cart.map(i => ({id: i.id, n: i.n})); // 儲存細節供刪除時還庫存
-        const itemString = cart.map(i => i.id + " " + i.n).join(', ');
+        const itemsToSave = cart.map(i => ({id: i.id, n: i.n}));
+        const itemString = cart.map(i => i.n).join(', ');
 
-        // 減少本機庫存
+        // 扣除庫存
         cart.forEach(item => {
             inv.forEach(cat => cat.items.forEach(it => { if(it.id === item.id) it.s--; }));
         });
 
-        // 儲存至本機歷史紀錄
+        // 存入紀錄
         orders.unshift({ 
-            id: Date.now(), // 唯一ID供刪除使用
+            id: Date.now(), 
             t: new Date().toLocaleTimeString(), 
             d: new Date().toLocaleDateString(), 
             total, 
-            profit: total-cost, 
+            profit: total - cost, 
             pay: currentPay, 
             items: itemString,
             rawItems: itemsToSave
@@ -218,7 +222,7 @@
         alert("結帳成功！");
     }
 
-    // --- 新增：單筆刪除點單邏輯 ---
+    // --- 核心修正：單筆刪除邏輯 ---
     function deleteSingleOrder(orderId) {
         if(!confirm("確定要刪除這筆交易紀錄嗎？")) return;
         
@@ -228,22 +232,29 @@
         const restoreStock = confirm("刪除紀錄時，是否要歸還該訂單的庫存數量？");
         if(restoreStock) {
             const order = orders[idx];
-            order.rawItems.forEach(savedItem => {
-                inv.forEach(cat => cat.items.forEach(it => { 
-                    if(it.id === savedItem.id) it.s++; 
-                }));
-            });
+            if(order.rawItems && Array.isArray(order.rawItems)) {
+                order.rawItems.forEach(savedItem => {
+                    inv.forEach(cat => cat.items.forEach(it => { 
+                        if(it.id === savedItem.id) it.s++; 
+                    }));
+                });
+            }
         }
 
         orders.splice(idx, 1);
         save();
-        init();
+        
+        // 刪除後立刻刷新 UI
+        updateLog(); 
+        init(); 
+        if(document.getElementById('admin-panel').style.display === 'flex') {
+            renderAdminTable();
+        }
         alert("紀錄已刪除。");
     }
 
-    // --- 新增：清除所有歷史紀錄 ---
     function clearAllOrders() {
-        if(confirm("⚠️ 注意：這將會清除「所有」歷史點單紀錄與當日營收統計。確定要執行嗎？")) {
+        if(confirm("⚠️ 注意：這將會清除「所有」歷史點單紀錄。確定要執行嗎？")) {
             orders = [];
             save();
             init();
@@ -257,11 +268,13 @@
         document.getElementById('stat-revenue').innerText = tOrders.reduce((a,b)=>a+b.total, 0);
         document.getElementById('stat-profit').innerText = tOrders.reduce((a,b)=>a+b.profit, 0);
         
-        // 顯示最近15筆，並加入刪除按鈕
         document.getElementById('order-log').innerHTML = "<strong>📋 最近交易 (點擊 ✕ 刪除)</strong><hr>" + 
             orders.slice(0,15).map(o => `
                 <div style="font-size:0.75em; border-bottom:1px solid #eee; padding:5px; display:flex; justify-content:space-between; align-items:center;">
-                    <div><b>$${o.total}</b> <small>${o.t} (${o.pay})</small><br><span style="color:#888;">${o.items.substring(0,20)}...</span></div>
+                    <div style="flex:1;">
+                        <b>$${o.total}</b> <small>${o.t} (${o.pay})</small><br>
+                        <span style="color:#888;">${o.items.substring(0,25)}${o.items.length > 25 ? '...' : ''}</span>
+                    </div>
                     <span class="del-log-btn" onclick="deleteSingleOrder(${o.id})">✕</span>
                 </div>
             `).join('');
@@ -298,15 +311,22 @@
         inv[ci].items.push({ id, n, c: Number(document.getElementById('new-cost').value||0), p: Number(document.getElementById('new-price').value||0), s: Number(document.getElementById('new-stock').value||0) });
         save(); renderAdminTable();
     }
+
     function addNewCategory() {
         const name = prompt("輸入新類別名稱");
         if(name) { inv.push({ cat: name, items: [] }); save(); init(); renderAdminTable(); }
     }
+
     function moveItem(ci, ii, dir) {
         const arr = inv[ci].items;
         if(ii+dir >= 0 && ii+dir < arr.length) { [arr[ii], arr[ii+dir]] = [arr[ii+dir], arr[ii]]; save(); renderAdminTable(); }
     }
-    function editItem(ci, ii, f, v) { inv[ci].items[ii][f] = Number(v); save(); }
+
+    function editItem(ci, ii, f, v) { 
+        inv[ci].items[ii][f] = Number(v); 
+        save(); 
+    }
+
     function delItem(ci, ii) { if(confirm("確定刪除？")) { inv[ci].items.splice(ii,1); save(); renderAdminTable(); } }
     function delCat(ci) { if(confirm("確定刪除整個類別？")) { inv.splice(ci,1); save(); init(); renderAdminTable(); } }
 
@@ -314,24 +334,30 @@
         const today = new Date().toLocaleDateString();
         const tOrders = orders.filter(o => o.d === today);
         let csv = "時間,金額,利潤,付款方式,品項\n";
-        tOrders.forEach(o => { csv += `${o.t},${o.total},${o.profit},${o.pay},${o.items}\n`; });
+        tOrders.forEach(o => { csv += `${o.t},${o.total},${o.profit},${o.pay},"${o.items}"\n`; });
         const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
         link.setAttribute("download", `今日報表_${today}.csv`);
         link.click();
     }
+
     function exportInventory() {
         const data = { inv, orders, time: new Date().toLocaleString() };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", `全店備份_${new Date().toLocaleDateString()}.json`);
+        link.setAttribute("download", `全店備份_${new Date().toLocaleDateString().replace(/\//g,'-')}.json`);
         link.click();
-        alert("備份完成！");
+        alert("備份文件已準備下載！");
     }
 
-    function save() { localStorage.setItem('pos_inv_final', JSON.stringify(inv)); localStorage.setItem('pos_orders_final', JSON.stringify(orders)); }
+    function save() { 
+        localStorage.setItem('pos_inv_final', JSON.stringify(inv)); 
+        localStorage.setItem('pos_orders_final', JSON.stringify(orders)); 
+    }
+
+    // 啟動
     init();
 </script>
 </body>
