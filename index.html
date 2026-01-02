@@ -171,7 +171,7 @@
     const db = firebase.database();
 
     let inv = []; let orders = []; let cart = []; let currentPay = '現金';
-    let currentSearchOrders = []; // 用於暫存搜尋結果以便匯出
+    let currentSearchOrders = []; 
 
     db.ref('inventory').on('value', (snapshot) => {
         const data = snapshot.val();
@@ -259,7 +259,6 @@
         }
     }
 
-    // 更新：支援月份搜尋
     function searchHistory(type) {
         let tOrders = [];
         let title = "";
@@ -283,7 +282,7 @@
             document.getElementById('btn-month-excel').style.display = 'inline-block';
         }
 
-        currentSearchOrders = tOrders; // 存起來給 Excel 用
+        currentSearchOrders = tOrders; 
         const container = document.getElementById('history-result-area');
 
         if(tOrders.length === 0) {
@@ -319,7 +318,6 @@
         container.innerHTML = html;
     }
 
-    // 新增：匯出目前搜尋到的月報表
     function exportMonthlyExcel() {
         if (currentSearchOrders.length === 0) return alert("沒有資料可匯出");
         const monthLabel = document.getElementById('search-month').value;
@@ -376,7 +374,10 @@
             (cat.items || []).forEach((it, ii) => { 
                 html += `<tr>
                     <td><span class="move-btn" onclick="move(${ci},${ii},-1)">↑</span><span class="move-btn" onclick="move(${ci},${ii},1)">↓</span></td>
-                    <td style="text-align:left;">${it.id} ${it.n}</td>
+                    <td style="text-align:left;">
+                        <span style="font-size:0.8em; color:#888;">${it.id}</span>
+                        <input type="text" class="admin-input" style="width:140px; text-align:left;" value="${it.n}" onchange="editName(${ci},${ii},this.value)">
+                    </td>
                     <td><input type="number" class="admin-input" value="${it.c}" onchange="edit(${ci},${ii},'c',this.value)"></td>
                     <td><input type="number" class="admin-input" value="${it.p}" onchange="edit(${ci},${ii},'p',this.value)"></td>
                     <td><input type="number" class="admin-input" value="${it.s}" onchange="edit(${ci},${ii},'s',this.value)"></td>
@@ -388,7 +389,16 @@
     }
 
     function edit(ci, ii, k, v) { inv[ci].items[ii][k] = Number(v); saveInv(); }
+    
+    // 新增：處理品名修改(文字類型)
+    function editName(ci, ii, v) { 
+        if(!v.trim()) return alert("品名不能為空！");
+        inv[ci].items[ii].n = v; 
+        saveInv(); 
+    }
+
     function delP(ci, ii) { if(confirm("確定刪除？")) { inv[ci].items.splice(ii, 1); saveInv(); } }
+    
     function move(ci, ii, dir) {
         let items = inv[ci].items;
         if(ii+dir < 0 || ii+dir >= items.length) return;
