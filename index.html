@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🧸 LITTLE NOOK POS (管理員安全版)</title>
+    <title>🧸 LITTLE NOOK POS (快速版)</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -52,9 +52,7 @@
 </head>
 <body>
 
-<div id="net-status">⚠️ 目前處於離線狀態，結帳將暫存於本機</div>
-
-<header>🧸 LITTLE NOOK POS (管理權限版)</header>
+<header>🧸 LITTLE NOOK POS (快速版)</header>
 <div class="nav-bar" id="navbar"></div>
 
 <div class="main-content">
@@ -77,7 +75,7 @@
     </div>
 </div>
 
-<div style="padding:15px; text-align:center; display: flex; justify-content: center; gap: 15px; flex-shrink: 0;">
+<div style="padding:15px; text-align:center; display: flex; justify-content: center; gap: 15px;">
     <button onclick="toggleAdmin()" style="padding:15px 25px; border-radius:15px; cursor:pointer; background:white; border:3px solid var(--main-brown); font-weight:bold; font-size: 1.2em;">🛠️ 商品編輯 / 收攤統計</button>
     <button onclick="toggleHistory()" style="padding:15px 25px; border-radius:15px; cursor:pointer; background:var(--accent-brown); color:white; border:none; font-weight:bold; font-size: 1.2em;">📜 銷售紀錄管理</button>
 </div>
@@ -105,7 +103,7 @@
 
 <div id="admin-panel">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
-        <h2 style="margin:0;">⚙️ 商品管理與統計 (雲端)</h2>
+        <h2 style="margin:0;">⚙️ 商品管理與統計 (免密碼)</h2>
         <div>
             <button onclick="exportToExcel()" style="padding:10px 20px; font-size: 1em; border-radius: 8px; background: #217346; color: white; border: none; cursor: pointer; margin-right: 10px;">📊 匯出完整 Excel</button>
             <button onclick="toggleAdmin()" style="padding:10px 20px; font-size: 1em; border-radius: 8px;">✕ 關閉視窗</button>
@@ -161,22 +159,11 @@
     let cart = []; 
     let currentPay = '現金';
     let currentSearchOrders = []; 
-    let sessionPass = ""; 
 
-    function checkAuth() {
-        if (!sessionPass) {
-            sessionPass = prompt("這是敏感操作，請輸入管理員密碼：");
-        }
-        return sessionPass;
-    }
-
+    // 數據監聽
     db.ref('inventory').on('value', (snapshot) => {
         const data = snapshot.val();
-        if(data) {
-            inv = data;
-            localStorage.setItem('nook_inv', JSON.stringify(inv));
-            initUI();
-        }
+        if(data) { inv = data; localStorage.setItem('nook_inv', JSON.stringify(inv)); initUI(); }
     });
 
     db.ref('orders').on('value', (snapshot) => {
@@ -188,43 +175,21 @@
         }
     });
 
-    // --- 強化版：具備驗證金鑰的存檔函式 ---
+    // --- 簡化版存檔：不需密碼 ---
     function saveInv() { 
-        const pass = checkAuth(); 
-        if (!pass) return; 
-        
-        db.ref().update({
-            "inventory": inv,
-            "auth_key": pass  // 此處發送密碼供 Rules 比對
-        }).then(() => {
+        db.ref('inventory').set(inv).then(() => {
             localStorage.setItem('nook_inv', JSON.stringify(inv));
-            console.log("雲端同步成功");
-        }).catch(err => {
-            alert("❌ 儲存失敗！密碼錯誤或權限不足，系統將自動復原資料。");
-            sessionPass = ""; 
-            location.reload(); 
-        });
+            console.log("同步成功");
+        }).catch(err => alert("權限錯誤，請檢查 Firebase Rules 設定為 .write: true"));
     }
 
-    // --- 強化版：具備驗證金鑰的刪除紀錄函式 ---
     function deleteOrder(key) {
-        const pass = checkAuth();
-        if (!pass) return;
-
         if(confirm("確定刪除此紀錄？")) {
-            db.ref().update({
-                [`orders/${key}`]: null,
-                "auth_key": pass
-            }).then(() => {
-                alert("刪除成功");
-            }).catch(err => {
-                alert("❌ 密碼錯誤，無法刪除！");
-                sessionPass = "";
-                location.reload();
-            });
+            db.ref('orders/' + key).remove().then(() => alert("已刪除")).catch(err => alert("刪除失敗"));
         }
     }
 
+    // --- 其餘邏輯維持不變 ---
     function initUI() {
         const area = document.getElementById('item-area'), nav = document.getElementById('navbar');
         if(!area || !nav) return;
@@ -294,20 +259,14 @@
         db.ref('orders').push(newOrder).then(() => {
             return db.ref('inventory').set(inv);
         }).then(() => {
-            cart = []; 
-            document.getElementById('discount').value = ''; 
-            document.getElementById('cash-in').value = '';
-            renderCart();
+            cart = []; document.getElementById('discount').value = ''; document.getElementById('cash-in').value = ''; renderCart();
             alert("結帳成功！");
         }).catch(e => {
-            alert("❌ 結帳同步失敗（網路或權限問題），庫存未更新。");
-            inv = oldInv;
-            initUI();
+            alert("同步失敗"); inv = oldInv; initUI();
         });
     }
 
     function addNewProduct() {
-        if (!checkAuth()) return;
         const catN = document.getElementById('select-cat').value;
         const id = document.getElementById('new-id').value, n = document.getElementById('new-n').value;
         const c = Number(document.getElementById('new-c').value), p = Number(document.getElementById('new-p').value), s = Number(document.getElementById('new-s').value);
@@ -318,11 +277,7 @@
     }
 
     function delP(ci, ii) { 
-        if (!checkAuth()) return;
-        if(confirm("確定刪除？")) { 
-            inv[ci].items.splice(ii, 1); 
-            saveInv(); 
-        } 
+        if(confirm("確定刪除？")) { inv[ci].items.splice(ii, 1); saveInv(); } 
     }
 
     function toggleAdmin() {
@@ -392,8 +347,7 @@
             detailHtml += `<div style="padding:5px 0; border-bottom:1px dashed #ddd;"><b>${o.t}</b> $${o.total} (${o.pay})<br>${codes}</div>`;
             (o.items || []).forEach(it => { 
                 if(!summary[it.n]) summary[it.n] = {count:0, total:0}; 
-                summary[it.n].count++; 
-                summary[it.n].total += (Number(it.p) || 0); 
+                summary[it.n].count++; summary[it.n].total += (Number(it.p) || 0); 
             });
         });
         document.getElementById('stat-revenue').innerText = totalRev;
