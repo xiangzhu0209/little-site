@@ -163,7 +163,7 @@
     let cart = []; 
     let currentPay = '現金';
     let currentSearchOrders = []; 
-    let sessionPass = ""; // 關鍵：用於存放本分頁暫存密碼
+    let sessionPass = ""; 
 
     // --- 核心權限檢查函式 ---
     function checkAuth() {
@@ -192,18 +192,22 @@
         }
     });
 
-    // --- 修改後的存檔函式 (帶驗證) ---
+    // --- 【更新點 1】徹底修正後的存檔函式 ---
     function saveInv() { 
-        if (!checkAuth()) return; // 沒輸密碼直接中斷
+        if (!checkAuth()) return; 
         
-        localStorage.setItem('nook_inv', JSON.stringify(inv));
-        db.ref('inventory').set(inv).catch(err => {
-            alert("⚠️ 儲存失敗！密碼錯誤或權限不足。");
-            sessionPass = ""; // 清除密碼以便下次重新嘗試
+        // 先嘗試寫入雲端，成功才存本地，失敗就報錯並刷掉畫面
+        db.ref('inventory').set(inv).then(() => {
+            localStorage.setItem('nook_inv', JSON.stringify(inv));
+            console.log("雲端同步成功");
+        }).catch(err => {
+            alert("❌ 儲存失敗！權限不足或密碼錯誤，系統將復原資料。");
+            sessionPass = ""; 
+            location.reload(); // 強制刷掉剛才在畫面上的錯誤修改
         });
     }
 
-    // --- 其餘 POS 邏輯 ---
+    // --- 其餘 UI 邏輯 ---
     function initUI() {
         const area = document.getElementById('item-area'), nav = document.getElementById('navbar');
         if(!area || !nav) return;
@@ -251,7 +255,7 @@
         document.getElementById('btn-elec').className = m==='電支'?'pay-btn active':'pay-btn';
     }
 
-    // 結帳功能：通常開放給員工，如果不開放可以加 checkAuth()
+    // --- 【更新點 2】修正結帳後的同步邏輯 ---
     function submitOrder() {
         if(!cart.length) return;
         const totalAmt = Number(document.getElementById('final-total').innerText);
@@ -265,33 +269,43 @@
             pay: currentPay,
             items: [...cart]
         };
+
+        // 建立一個備份，萬一失敗可以還原
+        const oldInv = JSON.parse(JSON.stringify(inv));
+
+        // 本地減庫存
         cart.forEach(item => { 
             inv.forEach(cat => (cat.items || []).forEach(it => { if(it.id === item.id) it.s--; })); 
         });
         
+        // 1. 先寫入訂單
         db.ref('orders').push(newOrder).then(() => {
-            // 訂單成功後更新庫存（此處需要密碼）
-            if(sessionPass) {
-                db.ref('inventory').set(inv);
-            } else {
-                // 如果是員工結帳沒密碼，Rules 應允許 update orders 但不允許 inventory
-                // 這部分依賴你剛剛在 Rules 寫的邏輯
-            }
-            cart = []; document.getElementById('discount').value = ''; document.getElementById('cash-in').value = '';
+            // 2. 訂單成功後寫入庫存更新
+            return db.ref('inventory').set(inv);
+        }).then(() => {
+            // 全部成功
+            cart = []; 
+            document.getElementById('discount').value = ''; 
+            document.getElementById('cash-in').value = '';
             renderCart();
             alert("結帳成功！");
-        }).catch(e => alert("結帳權限不足，請檢查資料庫規則。"));
+        }).catch(e => {
+            alert("❌ 結帳同步失敗（權限不足或網路問題），庫存未更新。");
+            inv = oldInv; // 還原本地庫存
+            initUI();
+        });
     }
 
-    // --- 管理與歷史功能 (全部整合密碼驗證) ---
+    // --- 管理功能 ---
     function deleteOrder(key) {
         if (!checkAuth()) return;
         if(confirm("確定刪除此紀錄？")) {
             db.ref('orders/' + key).remove().then(() => {
                 alert("刪除成功");
             }).catch(err => {
-                alert("權限不足！");
+                alert("權解不足！");
                 sessionPass = "";
+                location.reload();
             });
         }
     }
@@ -330,7 +344,6 @@
         }
     }
 
-    // --- 其他 UI 渲染函式 ---
     function renderAdminTable() {
         let html = '';
         inv.forEach((cat, ci) => {
@@ -395,7 +408,6 @@
         document.getElementById('stat-tbody').innerHTML = html || '<tr><td colspan="3">今日尚無銷售</td></tr>';
     }
 
-    // 分類、搜尋、Excel 匯出函式保持不變...
     function updateCatSelect() {
         const select = document.getElementById('select-cat');
         if(!select) return;
@@ -463,7 +475,6 @@
         XLSX.writeFile(wb, `LittleNook_全部紀錄.xlsx`);
     }
 
-    // 初次載入
     if(inv.length > 0) initUI();
 
 </script>
