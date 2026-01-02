@@ -6,6 +6,7 @@
     <title>🧸 LITTLE NOOK POS (雲端完整版)</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <style>
         :root { --main-brown: #b0a496; --bg-cream: #fcf8f5; --accent-brown: #8c7b6c; --price-red: #d9534f; --profit-green: #6b8e23; }
@@ -82,7 +83,10 @@
 <div id="admin-panel">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
         <h2 style="margin:0;">⚙️ 商品管理與統計 (雲端)</h2>
-        <button onclick="toggleAdmin()" style="padding:10px 25px; font-size: 1.2em; border-radius: 8px;">✕ 關閉視窗</button>
+        <div>
+            <button onclick="exportToExcel()" style="padding:10px 25px; font-size: 1.2em; border-radius: 8px; background: #217346; color: white; border: none; cursor: pointer; margin-right: 10px;">📊 匯出成 EXCEL</button>
+            <button onclick="toggleAdmin()" style="padding:10px 25px; font-size: 1.2em; border-radius: 8px;">✕ 關閉視窗</button>
+        </div>
     </div>
 
     <div class="add-row-top">
@@ -117,7 +121,6 @@
 </div>
 
 <script>
-    // Firebase 配置
     const firebaseConfig = {
         apiKey: "AIzaSyDn6HtjYMz_FFKU9xjhvV1xXYPr7t36UU0",
         authDomain: "little-nook-aad58.firebaseapp.com",
@@ -132,7 +135,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 完整原始清單 (A-H區)
     const initialData = [
         { cat: "A 包包區", items: [ {id:"A01", n:"針織托特包(黃鬱金香)", c:15, p:79, s:2}, {id:"A02", n:"針織托特包(米色小白狗)", c:15, p:79, s:2}, {id:"A03", n:"波點小狗化妝包", c:30, p:99, s:2}, {id:"A04", n:"ins蝴蝶結皺肩包(銀)", c:85, p:199, s:1}, {id:"A05", n:"Ins蝴蝶結皺肩包(藍)", c:85, p:199, s:1}, {id:"A06", n:"復古手提保齡球包(咖)", c:100, p:249, s:1}, {id:"A07", n:"豹紋手提小廢包(咖)", c:80, p:149, s:1}, {id:"A08", n:"素面斜跨皺肩包", c:90, p:199, s:1}, {id:"A09", n:"素面斜肩包(白)", c:90, p:199, s:1}, {id:"A10", n:"法式月牙腋下包(黑)", c:85, p:199, s:1}, {id:"A11", n:"法式月牙腋下包(白)", c:85, p:199, s:2}, {id:"A12", n:"雲朵迷你手提包(白)", c:70, p:139, s:2}, {id:"A13", n:"雲朵迷你手提包(黑)", c:70, p:139, s:2}, {id:"A14", n:"復古亮皮手提斜跨包(黑)", c:140, p:249, s:1}, {id:"A15", n:"小狗折疊化妝包", c:55, p:100, s:8}, {id:"A16", n:"卡其豹紋小方包", c:55, p:139, s:1}, {id:"A17", n:"編織月牙腋下包(粉紅)", c:95, p:199, s:1}, {id:"A18", n:"法式跳色月牙腋下包(米白)", c:70, p:199, s:2}, {id:"A19", n:"Y2K鍊條雙肩包", c:90, p:199, s:1}, {id:"A20", n:"JK風日系郵差包(咖)", c:120, p:289, s:1}, {id:"A21", n:"漆皮法棍腋下包(黑)", c:90, p:199, s:2}, {id:"A22", n:"珍珠雙鍊條腋下包(粉)", c:65, p:249, s:1}, {id:"A23", n:"珍珠雙鏈條腋下包(白)", c:65, p:249, s:1}, {id:"A24", n:"法國小眾方形腋下包(黑)", c:60, p:199, s:2}, {id:"A25", n:"法國小眾方形腋下包(紅棕)", c:60, p:199, s:2}, {id:"A26", n:"大容量保齡球包(咖)", c:80, p:289, s:1}, {id:"A27", n:"蕾絲花邊後背包(黑)", c:70, p:199, s:1}, {id:"A28", n:"蕾絲花邊後背包(粉)", c:70, p:199, s:1}, {id:"A29", n:"韓系簡約褶皺雲朵包", c:65, p:199, s:1}, {id:"A30", n:"針織提手包(眼鏡狗)", c:65, p:139, s:2}, {id:"A31", n:"針織提手包(紅格狗)", c:65, p:139, s:2} ]},
         { cat: "B 生活小物", items: [ {id:"B01", n:"迷你磁吸小檯燈(藍)", c:30, p:79, s:3}, {id:"B02", n:"迷你磁吸小檯燈(綠)", c:30, p:79, s:3}, {id:"B03", n:"章魚暖光燈(藍)", c:40, p:89, s:2}, {id:"B04", n:"章魚暖光燈(黃)", c:40, p:89, s:2}, {id:"B05", n:"鬱金香封口夾(黃)", c:15, p:69, s:2}, {id:"B06", n:"鬱金香封口夾(粉)", c:15, p:69, s:2}, {id:"B07", n:"七層漢堡塑膠盤", c:35, p:129, s:2}, {id:"B08", n:"黃色眼睛化妝鏡", c:25, p:99, s:2}, {id:"B09", n:"粉色眼睛化妝鏡", c:25, p:99, s:2}, {id:"B10", n:"丙烯馬克筆(12色)", c:40, p:99, s:2}, {id:"B11", n:"丙烯馬克筆(48色)", c:150, p:259, s:1}, {id:"B12", n:"便利店存錢罐", c:85, p:159, s:1}, {id:"B13", n:"廣角鏡手機支架", c:40, p:99, s:6}, {id:"B14", n:"小麥麥耳機帽", c:30, p:89, s:1}, {id:"B15", n:"多巴胺計算機(黃)", c:45, p:99, s:1}, {id:"B16", n:"多巴胺計算機(紫)", c:45, p:99, s:1}, {id:"B17", n:"多巴胺計算機(白)", c:45, p:99, s:1}, {id:"B18", n:"雲朵鏡", c:15, p:49, s:1}, {id:"B19", n:"酪梨香氛蠟燭", c:20, p:99, s:4}, {id:"B20", n:"橘子香氛蠟燭", c:30, p:99, s:2}, {id:"B21", n:"聖誕樹蠟燭(白)", c:35, p:99, s:2}, {id:"B22", n:"聖誕樹蠟燭(綠)", c:35, p:99, s:2}, {id:"B23", n:"柿子香氛蠟燭", c:45, p:99, s:4}, {id:"B24", n:"山竹香氛蠟燭", c:45, p:99, s:4}, {id:"B25", n:"星星人手機氣囊(摔)", c:10, p:59, s:2}, {id:"B26", n:"星星人手機氣囊(看)", c:10, p:59, s:2}, {id:"B27", n:"無尾熊磁吸氣囊", c:28, p:79, s:2}, {id:"B28", n:"手提抱枕毯(餅乾)", c:135, p:249, s:1}, {id:"B29", n:"手提抱枕毯(巧克力)", c:135, p:249, s:1}, {id:"B30", n:"胡蘿蔔錄音筆", c:30, p:69, s:4}, {id:"B31", n:"可頌掛勾", c:65, p:99, s:8} ]},
@@ -144,13 +146,12 @@
         { cat: "H 節慶文具", items: [ {id:"H1", n:"馬年大吉紅包(5入)", c:6, p:39, s:5}, {id:"H2", n:"財源廣進紅包(5入)", c:6, p:39, s:5}, {id:"H3", n:"卡通蘋果福紅包(5入)", c:6, p:39, s:5}, {id:"H4", n:"燙金麻將馬紅包(5入)", c:7, p:39, s:5}, {id:"H5", n:"燙金馬上有錢(5入)", c:7, p:39, s:5}, {id:"H6", n:"燙金滿版馬(5入)", c:7, p:39, s:5}, {id:"H7", n:"Q版開開心心(5入)", c:6, p:39, s:5}, {id:"H8", n:"Q版馬力全開(5入)", c:6, p:39, s:5}, {id:"H9", n:"Q版馬上錢花(5入)", c:6, p:39, s:5}, {id:"H10", n:"書法新年快樂(5入)", c:8, p:39, s:2}, {id:"H11", n:"書法平安喜樂(5入)", c:8, p:39, s:2}, {id:"H12", n:"書法大吉大利(5入)", c:8, p:39, s:2}, {id:"H13", n:"多巴胺水果(6入)", c:8, p:49, s:3}, {id:"H14", n:"多巴胺小馬(6入)", c:9, p:49, s:2}, {id:"H15", n:"塗鴉水果系列(6入)", c:6, p:49, s:2}, {id:"H16", n:"卡通水果系列(6入)", c:9, p:49, s:3}, {id:"H17", n:"卡通小馬系列(6入)", c:9, p:49, s:3}, {id:"H18", n:"精神小馬系列(6入)", c:13, p:49, s:3}, {id:"H19", n:"蠟筆小新系列(6入)", c:22, p:59, s:2}, {id:"H20", n:"三麗鷗系列(6入)", c:22, p:59, s:2} ]}
     ];
 
-    let inv = []; let orders = []; let cart = []; let currentPay = '現金';
+    let inv = []; let rawOrders = {}; let orders = []; let cart = []; let currentPay = '現金';
 
     // 監聽雲端資料庫
     db.ref('inventory').on('value', (snapshot) => {
         const data = snapshot.val();
         if (!data) {
-            console.log("雲端無資料，初始化 A-H 區清單...");
             inv = initialData;
             saveInv();
         } else {
@@ -161,7 +162,9 @@
 
     db.ref('orders').on('value', (snapshot) => {
         const data = snapshot.val();
-        orders = data ? Object.values(data).reverse() : [];
+        rawOrders = data || {};
+        // 將 Firebase 物件轉換成帶有 Key 的陣列，方便刪除
+        orders = data ? Object.keys(data).map(key => ({...data[key], firebaseKey: key})).reverse() : [];
         updateLog();
         renderStatTable();
     });
@@ -169,7 +172,6 @@
     function saveInv() { db.ref('inventory').set(inv); }
     function saveOrder(order) { db.ref('orders').push(order); }
 
-    // 初始化介面
     function initUI() {
         const area = document.getElementById('item-area'), nav = document.getElementById('navbar');
         area.innerHTML = ''; nav.innerHTML = '';
@@ -187,7 +189,6 @@
         if(document.getElementById('admin-panel').style.display === 'flex') renderAdminTable();
     }
 
-    // --- POS 操作功能 ---
     function addCart(id) {
         let target = null;
         inv.forEach(c => (c.items || []).forEach(i => { if(i.id === id) target = i; }));
@@ -230,7 +231,6 @@
         alert("結帳成功！雲端庫存已更新");
     }
 
-    // --- 管理後台功能 ---
     function toggleAdmin() {
         const p = document.getElementById('admin-panel');
         p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
@@ -293,23 +293,69 @@
         saveInv();
     }
 
-    function updateLog() {
-        document.getElementById('order-log').innerHTML = "<strong>📋 最近交易</strong><hr>" + orders.slice(0,5).map(o => `<div style="padding:5px; border-bottom:1px solid #eee;">$${o.total} (${o.t})</div>`).join('');
+    // 補回交易刪除功能
+    function deleteOrder(key) {
+        if(confirm("確定要刪除這筆交易紀錄嗎？(不會退回庫存)")) {
+            db.ref('orders/' + key).remove();
+        }
     }
 
+    function updateLog() {
+        document.getElementById('order-log').innerHTML = "<strong>📋 最近交易</strong><hr>" + 
+        orders.slice(0,8).map(o => `
+            <div style="padding:8px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+                <span>$${o.total} (${o.t})</span>
+                <span onclick="deleteOrder('${o.firebaseKey}')" style="color:red; cursor:pointer; font-weight:bold;">🗑️</span>
+            </div>`).join('');
+    }
+
+    // 修正統計表渲染與變數未定義錯誤
     function renderStatTable() {
         const today = new Date().toLocaleDateString();
         const tOrders = orders.filter(o => o.d === today);
-        document.getElementById('stat-revenue').innerText = tOrders.reduce((a,b)=>a+total, 0); // 注意：這裡應為 o.total，已在下方修正
-        document.getElementById('stat-revenue').innerText = tOrders.reduce((a,b)=>a+b.total, 0);
-        document.getElementById('stat-profit').innerText = tOrders.reduce((a,b)=>a+b.profit, 0);
+        
+        // 修正：確保變數初始化
+        let totalRev = 0;
+        let totalProf = 0;
         const summary = {};
+
         tOrders.forEach(o => {
-            (o.items || []).forEach(it => { if(!summary[it.n]) summary[it.n] = {count:0, total:0}; summary[it.n].count++; summary[it.n].total+=it.p; });
+            totalRev += (o.total || 0);
+            totalProf += (o.profit || 0);
+            (o.items || []).forEach(it => { 
+                if(!summary[it.n]) summary[it.n] = {count:0, total:0}; 
+                summary[it.n].count++; 
+                summary[it.n].total += (it.p || 0); 
+            });
         });
+
+        document.getElementById('stat-revenue').innerText = totalRev;
+        document.getElementById('stat-profit').innerText = totalProf;
+        
         let html = '';
-        for(let n in summary) html += `<tr><td style="text-align:left;">${n}</td><td>${summary[n].count}</td><td>$${summary[n].total}</td></tr>`;
+        for(let n in summary) {
+            html += `<tr><td style="text-align:left;">${n}</td><td>${summary[n].count}</td><td>$${summary[n].total}</td></tr>`;
+        }
         document.getElementById('stat-tbody').innerHTML = html || '<tr><td colspan="3">今日尚無銷售</td></tr>';
+    }
+
+    // 補回 Excel 匯出功能
+    function exportToExcel() {
+        if (orders.length === 0) return alert("尚無交易紀錄可匯出");
+        
+        const exportData = orders.map(o => ({
+            "日期": o.d,
+            "時間": o.t,
+            "總額": o.total,
+            "利潤": o.profit,
+            "付款方式": o.pay,
+            "商品內容": (o.items || []).map(i => i.n).join(', ')
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "交易紀錄");
+        XLSX.writeFile(workbook, `LittleNook_交易紀錄_${new Date().toLocaleDateString()}.xlsx`);
     }
 </script>
 </body>
