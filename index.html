@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🧸 LITTLE NOOK POS (專業終極版)</title>
+    <title>🧸 LITTLE NOOK POS (終極無刪減版)</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -11,14 +11,10 @@
     <style>
         :root { --main-brown: #b0a496; --bg-cream: #fcf8f5; --accent-brown: #8c7b6c; --price-red: #d9534f; --profit-green: #6b8e23; }
         body { font-family: sans-serif; background: var(--bg-cream); margin: 0; display: flex; flex-direction: column; height: 100vh; color: #5d5246; overflow: hidden; }
-        
         #net-status { background: #ff4d4d; color: white; text-align: center; padding: 5px; font-weight: bold; display: none; z-index: 9999; }
-        #net-status.online { background: #28a745; }
-
         header { background: var(--main-brown); color: white; padding: 12px; text-align: center; font-size: 1.3em; font-weight: bold; flex-shrink: 0; }
         .nav-bar { background: #e8e0d9; padding: 10px; display: flex; gap: 10px; overflow-x: auto; border-bottom: 2px solid #d1c7bc; flex-shrink: 0; }
         .nav-btn { background: white; border: 1px solid #d1c7bc; padding: 8px 18px; border-radius: 20px; white-space: nowrap; cursor: pointer; font-size: 1.1em; }
-        
         .main-content { display: flex; flex: 1; overflow: hidden; padding: 10px; gap: 10px; }
         .item-area { flex: 1.8; overflow-y: auto; background: white; border-radius: 15px; padding: 15px; border: 2px solid #e8e0d9; }
         .cat-title { background: #fdf5f0; padding: 8px 15px; border-radius: 20px; margin: 15px 0 8px; font-weight: bold; border-left: 8px solid var(--main-brown); font-size: 1.2em; }
@@ -27,7 +23,6 @@
         .p-name { font-size: 0.85em; font-weight: bold; margin-bottom: 5px; height: 2.8em; overflow: hidden; line-height: 1.4; }
         .p-price { color: #c2966d; font-size: 1.2em; font-weight: bold; }
         .p-stock { font-size: 0.8em; color: #999; }
-
         .checkout-area { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 320px; overflow-y: auto; }
         .card { background: white; border-radius: 15px; padding: 12px; border: 2px solid #e8e0d9; }
         #cart-list { max-height: 200px; overflow-y: auto; border-bottom: 2px dashed #e8e0d9; }
@@ -36,18 +31,16 @@
         .total-display { font-size: 3.2em; font-weight: bold; color: var(--price-red); text-align: right; margin: 10px 0; }
         .pay-btn { flex: 1; padding: 15px; border-radius: 10px; border: 1px solid #ccc; background: white; cursor: pointer; font-weight: bold; font-size: 1.3em;}
         .pay-btn.active { background: var(--accent-brown); color: white; border-color: var(--accent-brown); }
-
         #admin-panel, #history-panel { position: fixed; inset: 10px; background: white; z-index: 1000; border-radius: 20px; display: none; flex-direction: column; padding: 15px; border: 3px solid var(--main-brown); box-shadow: 0 0 50px rgba(0,0,0,0.3); }
         .admin-layout { display: grid; grid-template-columns: 1.6fr 0.9fr; gap: 15px; flex: 1; overflow: hidden; }
         .admin-table-container { overflow: auto; border: 1px solid #eee; border-radius: 8px; }
         table { width: 100%; border-collapse: collapse; font-size: 1em; }
-        th { background: #f4f4f4; position: sticky; top: 0; padding: 10px; border: 1px solid #ddd; z-index: 5; }
+        th { background: #f4f4f4; padding: 10px; border: 1px solid #ddd; position: sticky; top: 0; }
         td { padding: 8px; border: 1px solid #ddd; text-align: center; }
-        
-        /* 核心要求：180px 寬度 */
-        .admin-input-name { width: 180px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95em; }
+        .admin-input-name { width: 180px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
         .admin-input-num { width: 65px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
         .del-x { color: red; font-weight: bold; cursor: pointer; font-size: 1.2em; }
+        .order-tag { background: #eee; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-right: 4px; }
     </style>
 </head>
 <body>
@@ -63,7 +56,7 @@
         <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <strong>🛒 當前清單</strong>
-                <button onclick="addCustomItem()" style="padding:5px 10px; background:var(--main-brown); color:white; border:none; border-radius:5px; cursor:pointer;">➕ 加價項</button>
+                <button onclick="addCustomItem()" style="padding:5px 10px; background:var(--main-brown); color:white; border:none; border-radius:5px; cursor:pointer;">➕ 加價</button>
             </div>
             <div id="cart-list"></div>
             <input type="number" id="discount" class="big-input" style="margin-top:10px" placeholder="折扣" oninput="calc()">
@@ -82,14 +75,14 @@
 
 <div style="padding:15px; text-align:center; display: flex; justify-content: center; gap: 10px;">
     <button onclick="toggleAdmin()" style="padding:15px; border-radius:15px; background:white; border:3px solid var(--main-brown); font-weight:bold;">🛠️ 後台與備份</button>
-    <button onclick="toggleHistory()" style="padding:15px; border-radius:15px; background:var(--accent-brown); color:white; border:none; font-weight:bold;">📜 歷史紀錄</button>
+    <button onclick="toggleHistory()" style="padding:15px; border-radius:15px; background:var(--accent-brown); color:white; border:none; font-weight:bold;">📜 銷售紀錄管理</button>
 </div>
 
 <div id="admin-panel">
     <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
         <h2 style="margin:0;">⚙️ 商品管理與備份</h2>
         <div>
-            <button onclick="backupJSON()" style="background:#217346; color:white; padding:8px; border:none; border-radius:5px; margin-right:5px;">💾 備份 JSON</button>
+            <button onclick="backupJSON()" style="background:#217346; color:white; padding:8px; border:none; border-radius:5px;">💾 備份 JSON</button>
             <button onclick="document.getElementById('importFile').click()" style="background:#666; color:white; padding:8px; border:none; border-radius:5px;">📂 還原 JSON</button>
             <input type="file" id="importFile" style="display:none" onchange="restoreJSON(this)">
             <button onclick="toggleAdmin()" style="padding:8px; margin-left:10px;">✕ 關閉</button>
@@ -104,7 +97,8 @@
         </div>
         <div id="stat-area" style="background:#f9f9f9; padding:15px; border-radius:15px;">
             <h3>📊 今日統計</h3>
-            營收: <b id="stat-revenue" style="color:red; font-size:1.5em;">0</b> / 利潤: <b id="stat-profit" style="color:green; font-size:1.5em;">0</b>
+            營收: <b id="stat-revenue" style="color:red; font-size:1.5em;">0</b><br>
+            利潤: <b id="stat-profit" style="color:green; font-size:1.5em;">0</b>
             <hr>
             <div id="stat-tbody" style="font-size:0.9em;"></div>
         </div>
@@ -112,11 +106,19 @@
 </div>
 
 <div id="history-panel">
-    <div style="display:flex; justify-content:space-between; padding:10px;">
-        <h2>📜 歷史單據管理</h2>
-        <button onclick="toggleHistory()">關閉</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h2 style="margin:0;">📜 銷售紀錄管理</h2>
+        <button onclick="toggleHistory()">✕ 關閉</button>
     </div>
-    <div id="history-result-area" style="flex:1; overflow-y:auto; padding:10px;"></div>
+    <div style="background: #fdf5f0; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+        <label>日搜尋：</label><input type="date" id="search-date">
+        <button onclick="searchHistory('day')">🔍 查單日</button>
+        <div style="border-left: 1px solid #ccc; height: 30px; margin: 0 10px;"></div>
+        <label>月搜尋：</label><input type="month" id="search-month">
+        <button onclick="searchHistory('month')">📊 算月營收</button>
+        <button id="btn-month-excel" onclick="exportMonthlyExcel()" style="display:none; background:#217346; color:white;">📥 匯出月報表</button>
+    </div>
+    <div id="history-result-area" style="flex:1; overflow-y:auto; background:white; border-radius:10px; padding:10px; border:1px solid #ddd;"></div>
 </div>
 
 <script>
@@ -133,9 +135,8 @@
     const db = firebase.database();
 
     let inv = JSON.parse(localStorage.getItem('nook_inv')) || []; 
-    let orders = []; let cart = []; let currentPay = '現金';
+    let orders = []; let cart = []; let currentPay = '現金'; let currentSearchOrders = [];
 
-    // Firebase 監聽
     db.ref('inventory').on('value', snap => { if(snap.val()){ inv = snap.val(); localStorage.setItem('nook_inv', JSON.stringify(inv)); initUI(); } });
     db.ref('orders').on('value', snap => { 
         if(snap.val()){ 
@@ -166,23 +167,13 @@
         if(t && t.s > 0) { cart.push({...t}); renderCart(); }
     }
 
-    // 商品加價功能
     function addCustomItem() {
-        const n = prompt("輸入加價品名 (例如: 包裝費):");
-        const p = prompt("輸入加價金額:");
-        if(n && !isNaN(p) && p !== null) {
-            cart.push({id:"加價", n: n, p: Number(p), c: 0});
-            renderCart();
-        }
+        const n = prompt("加價品名:"), p = prompt("加價金額:");
+        if(n && !isNaN(p)) { cart.push({id:"加價", n, p:Number(p), c:0}); renderCart(); }
     }
 
     function renderCart() {
-        document.getElementById('cart-list').innerHTML = cart.map((it, i) => `
-            <div class="cart-item">
-                <span>${it.n}</span>
-                <b>$${it.p}</b>
-                <span onclick="cart.splice(${i},1);renderCart()" style="color:red; cursor:pointer;">✕</span>
-            </div>`).join('');
+        document.getElementById('cart-list').innerHTML = cart.map((it, i) => `<div class="cart-item"><span>${it.n}</span><b>$${it.p}</b><span onclick="cart.splice(${i},1);renderCart()" style="color:red; cursor:pointer;">✕</span></div>`).join('');
         calc();
     }
 
@@ -208,25 +199,20 @@
         const total = Number(document.getElementById('final-total').innerText);
         const cost = cart.reduce((a,b)=>a+(b.c||0),0);
         const o = { id:Date.now(), t:new Date().toLocaleTimeString(), d:new Date().toLocaleDateString(), total, profit:total-cost, pay:currentPay, items:[...cart] };
-        
-        // 扣庫存
         cart.forEach(ci => { if(ci.id!=="加價") inv.forEach(c => (c.items||[]).forEach(it => { if(it.id===ci.id) it.s--; })); });
-        
         db.ref('orders').push(o); saveInv();
         cart = []; document.getElementById('discount').value=''; document.getElementById('cash-in').value='';
         renderCart(); alert("結帳完成！");
     }
 
-    // 歸還庫存功能
+    // 歸還庫存刪除功能
     function deleteOrder(key) {
-        if(!confirm("確定刪除此紀錄並歸還庫存？")) return;
-        const orderToDelete = orders.find(o => o.firebaseKey === key);
-        if(orderToDelete && orderToDelete.items) {
-            orderToDelete.items.forEach(oi => {
+        if(!confirm("確定刪除此紀錄並退回庫存？")) return;
+        const o = orders.find(x => x.firebaseKey === key);
+        if(o && o.items) {
+            o.items.forEach(oi => {
                 if(oi.id !== "加價") {
-                    inv.forEach(cat => (cat.items || []).forEach(it => {
-                        if(it.id === oi.id) it.s++; // 歸還
-                    }));
+                    inv.forEach(c => (c.items || []).forEach(it => { if(it.id === oi.id) it.s++; }));
                 }
             });
         }
@@ -237,20 +223,48 @@
     function updateLog() {
         document.getElementById('order-log').innerHTML = "<strong>📋 最近交易</strong><hr>" + 
         orders.slice(0,8).map(o => `
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #eee;">
-                <div>
-                    <b>$${o.total}</b> <small>(${o.t})</small><br>
-                    <small style="color:#888">${o.pay} | ID: ${(o.items||[]).map(i=>i.id).join(',')}</small>
-                </div>
+            <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #eee;">
+                <div><b>$${o.total}</b> (${o.t})<br><small>${o.pay} | ${(o.items||[]).map(i=>i.id).join(',')}</small></div>
                 <span onclick="deleteOrder('${o.firebaseKey}')" style="color:red; cursor:pointer; font-size:1.2em;">🗑️</span>
             </div>`).join('');
     }
 
+    function searchHistory(type) {
+        let tOrders = [];
+        if(type==='day') {
+            const date = new Date(document.getElementById('search-date').value).toLocaleDateString();
+            tOrders = orders.filter(o => o.d === date);
+            document.getElementById('btn-month-excel').style.display='none';
+        } else {
+            const month = document.getElementById('search-month').value;
+            tOrders = orders.filter(o => {
+                const d = new Date(o.d);
+                return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}` === month;
+            });
+            document.getElementById('btn-month-excel').style.display='inline-block';
+        }
+        currentSearchOrders = tOrders;
+        const rev = tOrders.reduce((a,b)=>a+b.total,0);
+        let h = `<h3>搜尋結果 (共 ${tOrders.length} 筆, 總額: $${rev})</h3><table><thead><tr><th>時間</th><th>品項</th><th>額</th><th>刪</th></tr></thead><tbody>`;
+        tOrders.forEach(o => {
+            h += `<tr><td>${o.d}<br>${o.t}</td><td style="text-align:left;">${(o.items||[]).map(i=>`<span class="order-tag">${i.id}</span>`).join('')}</td><td>$${o.total}</td><td onclick="deleteOrder('${o.firebaseKey}')" style="color:red">🗑️</td></tr>`;
+        });
+        document.getElementById('history-result-area').innerHTML = h + "</tbody></table>";
+    }
+
+    function exportMonthlyExcel() {
+        const data = currentSearchOrders.map(o => ({ "日期":o.d, "時間":o.t, "總額":o.total, "利潤":o.profit, "支付":o.pay, "代碼":(o.items||[]).map(i=>i.id).join(',') }));
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "月報表");
+        XLSX.writeFile(wb, `Nook_Report_${document.getElementById('search-month').value}.xlsx`);
+    }
+
     function toggleAdmin() { 
-        const p = document.getElementById('admin-panel'); 
-        p.style.display = p.style.display==='flex'?'none':'flex'; 
+        const p = document.getElementById('admin-panel'); p.style.display = p.style.display==='flex'?'none':'flex'; 
         if(p.style.display==='flex') renderAdminTable();
     }
+    function toggleHistory() { document.getElementById('history-panel').style.display = document.getElementById('history-panel').style.display==='flex'?'none':'flex'; }
 
     function renderAdminTable() {
         let h = '';
@@ -259,14 +273,11 @@
             (c.items||[]).forEach((it, ii) => {
                 h += `<tr>
                     <td><button onclick="move(${ci},${ii},-1)">↑</button></td>
-                    <td>
-                        <div style="font-size:10px; color:gray;">${it.id}</div>
-                        <input class="admin-input-name" value="${it.n}" onchange="edit(${ci},${ii},'n',this.value)">
-                    </td>
+                    <td><div style="font-size:10px; color:gray;">${it.id}</div><input class="admin-input-name" value="${it.n}" onchange="edit(${ci},${ii},'n',this.value)"></td>
                     <td><input class="admin-input-num" value="${it.c}" onchange="edit(${ci},${ii},'c',this.value)"></td>
                     <td><input class="admin-input-num" value="${it.p}" onchange="edit(${ci},${ii},'p',this.value)"></td>
                     <td><input class="admin-input-num" value="${it.s}" onchange="edit(${ci},${ii},'s',this.value)"></td>
-                    <td><span class="del-x" onclick="delP(${ci},${ii})">✖</span></td>
+                    <td onclick="delP(${ci},${ii})" style="color:red">✖</td>
                 </tr>`;
             });
         });
@@ -285,43 +296,16 @@
         const tOrders = orders.filter(o => o.d === today);
         document.getElementById('stat-revenue').innerText = tOrders.reduce((a,b)=>a+b.total,0);
         document.getElementById('stat-profit').innerText = tOrders.reduce((a,b)=>a+b.profit,0);
-        
-        let detail = tOrders.map(o => `<div>${o.t} - $${o.total} (${o.pay})</div>`).join('');
-        document.getElementById('stat-tbody').innerHTML = detail || "今日暫無交易";
+        document.getElementById('stat-tbody').innerHTML = tOrders.map(o => `<div>${o.t} - $${o.total}</div>`).join('');
     }
 
-    function toggleHistory() {
-        const p = document.getElementById('history-panel');
-        p.style.display = p.style.display==='flex'?'none':'flex';
-        if(p.style.display==='flex') {
-            document.getElementById('history-result-area').innerHTML = orders.map(o => `
-                <div style="padding:10px; border-bottom:1px solid #ddd; display:flex; justify-content:space-between;">
-                    <div>${o.d} ${o.t} - <b>$${o.total}</b> (${o.pay})</div>
-                    <button onclick="deleteOrder('${o.firebaseKey}')" style="color:red;">🗑️ 刪除並退庫</button>
-                </div>`).join('');
-        }
-    }
-
-    // 備份與還原功能
     function backupJSON() {
-        const data = JSON.stringify(inv, null, 2);
-        const blob = new Blob([data], {type: "application/json"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `Nook_Backup_${new Date().toLocaleDateString()}.json`;
-        a.click();
+        const blob = new Blob([JSON.stringify(inv)], {type:"application/json"});
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `Nook_Backup_${new Date().toLocaleDateString()}.json`; a.click();
     }
-
     function restoreJSON(input) {
         const reader = new FileReader();
-        reader.onload = function() {
-            if(confirm("確定要還原嗎？這將覆蓋現有的所有商品資料！")) {
-                inv = JSON.parse(reader.result);
-                saveInv();
-                location.reload();
-            }
-        };
+        reader.onload = function() { if(confirm("確定覆蓋所有資料？")){ inv = JSON.parse(reader.result); saveInv(); location.reload(); } };
         reader.readAsText(input.files[0]);
     }
 
