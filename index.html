@@ -85,16 +85,27 @@
 
 <div id="history-panel">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-        <h2 style="margin:0;">📜 歷史銷售紀錄搜尋</h2>
+        <h2 style="margin:0;">📜 銷售紀錄管理</h2>
         <button onclick="toggleHistory()" style="padding:10px 25px; font-size: 1.2em; border-radius: 8px;">✕ 關閉視窗</button>
     </div>
-    <div style="background: #fdf5f0; padding: 20px; border-radius: 15px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center;">
-        <label style="font-weight: bold; font-size: 1.2em;">選擇日期：</label>
-        <input type="date" id="search-date" style="font-size: 1.3em; padding: 10px; border-radius: 8px; border: 1px solid #ccc;">
-        <button onclick="searchHistory()" style="padding: 12px 30px; background: var(--main-brown); color:white; border:none; border-radius: 8px; cursor:pointer; font-weight: bold; font-size: 1.1em;">🔍 搜尋銷售紀錄</button>
+    
+    <div style="background: #fdf5f0; padding: 20px; border-radius: 15px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+        <div>
+            <label style="font-weight: bold;">按日期搜尋：</label>
+            <input type="date" id="search-date" style="font-size: 1.1em; padding: 8px; border-radius: 8px; border: 1px solid #ccc;">
+            <button onclick="searchHistory('day')" style="padding: 10px 20px; background: var(--main-brown); color:white; border:none; border-radius: 8px; cursor:pointer;">🔍 查單日</button>
+        </div>
+        
+        <div style="border-left: 2px solid #d1c7bc; padding-left: 15px;">
+            <label style="font-weight: bold;">按月份結算：</label>
+            <input type="month" id="search-month" style="font-size: 1.1em; padding: 8px; border-radius: 8px; border: 1px solid #ccc;">
+            <button onclick="searchHistory('month')" style="padding: 10px 20px; background: var(--accent-brown); color:white; border:none; border-radius: 8px; cursor:pointer;">📊 算月營收</button>
+            <button id="btn-month-excel" onclick="exportMonthlyExcel()" style="padding: 10px 20px; background: #217346; color:white; border:none; border-radius: 8px; cursor:pointer; display:none;">📥 匯出月報表</button>
+        </div>
     </div>
+
     <div id="history-result-area" style="flex:1; overflow-y:auto; background:#fff; border-radius:10px; border:1px solid #eee; padding:15px;">
-        <p style="text-align:center; color:#999; margin-top:50px;">請選擇日期並點擊搜尋</p>
+        <p style="text-align:center; color:#999; margin-top:50px;">請選擇日期或月份並點擊搜尋</p>
     </div>
 </div>
 
@@ -102,7 +113,7 @@
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
         <h2 style="margin:0;">⚙️ 商品管理與統計 (雲端)</h2>
         <div>
-            <button onclick="exportToExcel()" style="padding:10px 25px; font-size: 1.2em; border-radius: 8px; background: #217346; color: white; border: none; cursor: pointer; margin-right: 10px;">📊 匯出成 EXCEL</button>
+            <button onclick="exportToExcel()" style="padding:10px 25px; font-size: 1.2em; border-radius: 8px; background: #217346; color: white; border: none; cursor: pointer; margin-right: 10px;">📊 匯出完整 Excel</button>
             <button onclick="toggleAdmin()" style="padding:10px 25px; font-size: 1.2em; border-radius: 8px;">✕ 關閉視窗</button>
         </div>
     </div>
@@ -160,6 +171,7 @@
     const db = firebase.database();
 
     let inv = []; let orders = []; let cart = []; let currentPay = '現金';
+    let currentSearchOrders = []; // 用於暫存搜尋結果以便匯出
 
     db.ref('inventory').on('value', (snapshot) => {
         const data = snapshot.val();
@@ -237,45 +249,66 @@
         alert("結帳成功！雲端庫存已更新");
     }
 
-    // 歷史紀錄相關功能
     function toggleHistory() {
         const p = document.getElementById('history-panel');
         p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
         if(p.style.display === 'flex') {
             document.getElementById('search-date').value = new Date().toISOString().split('T')[0];
-            document.getElementById('history-result-area').innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">點擊搜尋來查看紀錄</p>';
+            document.getElementById('history-result-area').innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">請點選日期或月份進行查詢</p>';
+            document.getElementById('btn-month-excel').style.display = 'none';
         }
     }
 
-    function searchHistory() {
-        const dateInput = document.getElementById('search-date').value;
-        if(!dateInput) return alert("請選擇日期");
+    // 更新：支援月份搜尋
+    function searchHistory(type) {
+        let tOrders = [];
+        let title = "";
         
-        // 將 HTML 的 YYYY-MM-DD 轉為跟資料庫一樣的格式 (可能因瀏覽器而異，通常是 LocaleDateString)
-        const targetDate = new Date(dateInput).toLocaleDateString();
-        const tOrders = orders.filter(o => o.d === targetDate);
+        if (type === 'day') {
+            const dateInput = document.getElementById('search-date').value;
+            if (!dateInput) return alert("請選擇日期");
+            const targetDate = new Date(dateInput).toLocaleDateString();
+            tOrders = orders.filter(o => o.d === targetDate);
+            title = `📅 ${targetDate} 銷售概況`;
+            document.getElementById('btn-month-excel').style.display = 'none';
+        } else {
+            const monthInput = document.getElementById('search-month').value; 
+            if (!monthInput) return alert("請選擇月份");
+            const [year, month] = monthInput.split('-');
+            tOrders = orders.filter(o => {
+                const oDate = new Date(o.d);
+                return oDate.getFullYear() == year && (oDate.getMonth() + 1) == parseInt(month);
+            });
+            title = `🗓️ ${monthInput} 月度結算`;
+            document.getElementById('btn-month-excel').style.display = 'inline-block';
+        }
+
+        currentSearchOrders = tOrders; // 存起來給 Excel 用
         const container = document.getElementById('history-result-area');
 
         if(tOrders.length === 0) {
-            container.innerHTML = `<p style="text-align:center; color:#999; margin-top:50px;">${targetDate} 沒有銷售紀錄。</p>`;
+            container.innerHTML = `<p style="text-align:center; color:#999; margin-top:50px;">查無紀錄。</p>`;
             return;
         }
 
-        let totalRev = 0, totalProf = 0;
-        let html = `<h3>📅 ${targetDate} 銷售概況</h3>
-                    <div style="font-size:1.2em; margin-bottom:15px; background:#f0fdf4; padding:10px; border-radius:8px;">
-                        當日營收：<b style="color:red;">$${tOrders.reduce((a,b)=>a+(b.total||0), 0)}</b> | 
-                        當日利潤：<b style="color:green;">$${tOrders.reduce((a,b)=>a+(b.profit||0), 0)}</b>
+        const totalRev = tOrders.reduce((a,b)=>a+(Number(b.total)||0), 0);
+        const totalProf = tOrders.reduce((a,b)=>a+(Number(b.profit)||0), 0);
+
+        let html = `<h3>${title}</h3>
+                    <div style="font-size:1.2em; margin-bottom:15px; background:#f0fdf4; padding:15px; border-radius:8px; display:flex; gap:20px;">
+                        <div>營收：<b style="color:red;">$${totalRev}</b></div>
+                        <div>利潤：<b style="color:green;">$${totalProf}</b></div>
+                        <div>成交：<b>${tOrders.length} 筆</b></div>
                     </div>
                     <table style="width:100%; border-collapse: collapse;">
                         <thead style="background:#eee;">
-                            <tr><th>時間</th><th>商品</th><th>金額</th><th>支付</th><th>刪除</th></tr>
+                            <tr><th>日期/時間</th><th>商品</th><th>金額</th><th>支付</th><th>刪除</th></tr>
                         </thead><tbody>`;
 
         tOrders.forEach(o => {
             const codeStr = (o.items || []).map(i => `<span class="order-tag">${i.id}</span>`).join('');
             html += `<tr style="border-bottom:1px solid #eee;">
-                        <td>${o.t}</td>
+                        <td>${o.d}<br><small>${o.t}</small></td>
                         <td style="text-align:left;">${codeStr}</td>
                         <td>$${o.total}</td>
                         <td>${o.pay}</td>
@@ -284,6 +317,21 @@
         });
         html += `</tbody></table>`;
         container.innerHTML = html;
+    }
+
+    // 新增：匯出目前搜尋到的月報表
+    function exportMonthlyExcel() {
+        if (currentSearchOrders.length === 0) return alert("沒有資料可匯出");
+        const monthLabel = document.getElementById('search-month').value;
+        const exportData = currentSearchOrders.map(o => ({
+            "日期": o.d, "時間": o.t, "總額": o.total, "利潤": o.profit, "付款方式": o.pay,
+            "商品代碼": (o.items || []).map(i => i.id).join(', '),
+            "品名明細": (o.items || []).map(i => i.n).join(', ')
+        }));
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "月度交易紀錄");
+        XLSX.writeFile(workbook, `LittleNook_月報表_${monthLabel}.xlsx`);
     }
 
     function toggleAdmin() {
@@ -351,8 +399,10 @@
     function deleteOrder(key) {
         if(confirm("確定要刪除這筆交易紀錄嗎？(不會退回庫存)")) {
             db.ref('orders/' + key).remove();
-            // 如果搜尋視窗開著，同步更新它
-            if(document.getElementById('history-panel').style.display === 'flex') searchHistory();
+            if(document.getElementById('history-panel').style.display === 'flex') {
+                const type = document.getElementById('search-month').value ? 'month' : 'day';
+                searchHistory(type);
+            }
         }
     }
 
@@ -407,7 +457,7 @@
         const worksheet = XLSX.utils.json_to_sheet(exportData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "交易紀錄");
-        XLSX.writeFile(workbook, `LittleNook_交易紀錄_${new Date().toLocaleDateString()}.xlsx`);
+        XLSX.writeFile(workbook, `LittleNook_完整紀錄_${new Date().toLocaleDateString()}.xlsx`);
     }
 </script>
 </body>
