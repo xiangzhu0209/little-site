@@ -10,22 +10,56 @@
         header { background: var(--main-brown); color: white; padding: 12px; text-align: center; font-size: 1.3em; font-weight: bold; flex-shrink: 0; }
         .nav-bar { background: #e8e0d9; padding: 10px; display: flex; gap: 10px; overflow-x: auto; border-bottom: 2px solid #d1c7bc; flex-shrink: 0; }
         .nav-btn { background: white; border: 1px solid #d1c7bc; padding: 6px 15px; border-radius: 20px; white-space: nowrap; cursor: pointer; font-size: 0.85em; }
-        .main-content { display: flex; flex: 1; overflow: hidden; padding: 10px; gap: 10px; }
-        .item-area { flex: 2; overflow-y: auto; background: white; border-radius: 15px; padding: 15px; border: 2px solid #e8e0d9; }
+        
+        /* 修正主內容區塊高度 */
+        .main-content { display: flex; flex: 1; overflow: hidden; padding: 10px; gap: 10px; height: calc(100vh - 120px); }
+        
+        .item-area { flex: 2; overflow-y: auto; background: white; border-radius: 15px; padding: 15px; border: 2px solid #e8e0d9; -webkit-overflow-scrolling: touch; }
         .cat-title { background: #fdf5f0; padding: 6px 15px; border-radius: 20px; margin: 15px 0 8px; font-weight: bold; border-left: 6px solid var(--main-brown); font-size: 0.9em; }
         .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
         .p-btn { background: white; border: 1px solid #f0e6dd; border-radius: 12px; padding: 8px 5px; text-align: center; cursor: pointer; box-shadow: 2px 2px 0 #e8e0d9; min-height: 75px; display: flex; flex-direction: column; justify-content: center; }
         .p-name { font-size: 0.7em; font-weight: bold; margin-bottom: 3px; height: 2.4em; overflow: hidden; }
         .p-price { color: #c2966d; font-size: 0.9em; font-weight: bold; }
         .p-stock { font-size: 0.65em; color: #999; }
-        .checkout-area { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 320px; }
-        .card { background: white; border-radius: 15px; padding: 12px; border: 2px solid #e8e0d9; }
-        #cart-list { max-height: 150px; overflow-y: auto; border-bottom: 2px dashed #e8e0d9; }
+
+        /* 關鍵修正：右側結帳檯高度固定且內容分區滑動 */
+        .checkout-area { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            min-width: 320px; 
+            height: 100%; 
+            overflow: hidden; 
+        }
+        
+        .card { background: white; border-radius: 15px; padding: 12px; border: 2px solid #e8e0d9; display: flex; flex-direction: column; }
+        
+        /* 當前清單滾動優化 */
+        #cart-list { 
+            max-height: 180px; 
+            overflow-y: auto; 
+            border-bottom: 2px dashed #e8e0d9; 
+            margin-bottom: 5px;
+            -webkit-overflow-scrolling: touch;
+        }
+        
         .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 5px; font-size: 0.85em; border-bottom: 1px solid #eee; }
         .big-input { font-size: 1.6em; padding: 10px; width: 100%; border-radius: 10px; border: 2px solid #d1c7bc; text-align: right; box-sizing: border-box; background: #fffcf5; font-weight: bold; }
-        .total-display { font-size: 2.8em; font-weight: bold; color: var(--price-red); text-align: right; margin: 5px 0; }
-        .pay-btn { flex: 1; padding: 15px; border-radius: 10px; border: 1px solid #ccc; background: white; cursor: pointer; font-weight: bold; font-size: 1.2em;}
+        .total-display { font-size: 2.5em; font-weight: bold; color: var(--price-red); text-align: right; margin: 5px 0; }
+        .pay-btn { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #ccc; background: white; cursor: pointer; font-weight: bold; font-size: 1.1em;}
         .pay-btn.active { background: var(--accent-brown); color: white; border-color: var(--accent-brown); }
+
+        /* 最近交易紀錄滾動優化 */
+        #order-log { 
+            flex: 1; 
+            overflow-y: auto; 
+            background: white; 
+            border-radius: 15px; 
+            padding: 12px; 
+            border: 2px solid #e8e0d9;
+            -webkit-overflow-scrolling: touch;
+        }
 
         #admin-panel { position: fixed; inset: 10px; background: white; z-index: 1000; border-radius: 20px; display: none; flex-direction: column; padding: 15px; border: 3px solid var(--main-brown); box-shadow: 0 0 50px rgba(0,0,0,0.3); }
         .admin-layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 15px; flex: 1; overflow: hidden; }
@@ -61,7 +95,7 @@
             <div style="text-align:right; margin-top:5px;">找零: <span id="cash-change" style="font-weight:bold; color:red; font-size:1.4em;">0</span></div>
             <button onclick="submitOrder()" style="width:100%; padding:15px; margin-top:10px; background:var(--profit-green); color:white; border:none; border-radius:12px; font-weight:bold; font-size:1.3em;">結帳完成</button>
         </div>
-        <div class="card" style="flex:1; overflow-y:auto;" id="order-log"></div>
+        <div id="order-log"></div>
     </div>
 </div>
 
@@ -98,6 +132,7 @@
 </div>
 
 <script>
+    // 您原本的所有商品資料與 JS 邏輯均完整保留於此處...
     const fullInventory = [
         { cat: "A 包包區", items: [ {id:"A01", n:"針織托特包(黃鬱金香)", c:15, p:79, s:2}, {id:"A02", n:"針織托特包(米色小白狗)", c:15, p:79, s:2}, {id:"A03", n:"波點小狗化妝包", c:30, p:99, s:2}, {id:"A04", n:"ins蝴蝶結皺肩包(銀)", c:85, p:199, s:1}, {id:"A05", n:"Ins蝴蝶結皺肩包(藍)", c:85, p:199, s:1}, {id:"A06", n:"復古手提保齡球包(咖)", c:100, p:249, s:1}, {id:"A07", n:"豹紋手提小廢包(咖)", c:80, p:149, s:1}, {id:"A08", n:"素面斜跨皺肩包", c:90, p:199, s:1}, {id:"A09", n:"素面斜肩包(白)", c:90, p:199, s:1}, {id:"A10", n:"法式月牙腋下包(黑)", c:85, p:199, s:1}, {id:"A11", n:"法式月牙腋下包(白)", c:85, p:199, s:2}, {id:"A12", n:"雲朵迷你手提包(白)", c:70, p:139, s:2}, {id:"A13", n:"雲朵迷你手提包(黑)", c:70, p:139, s:2}, {id:"A14", n:"復古亮皮手提斜跨包(黑)", c:140, p:249, s:1}, {id:"A15", n:"小狗折疊化妝包", c:55, p:100, s:8}, {id:"A16", n:"卡其豹紋小方包", c:55, p:139, s:1}, {id:"A17", n:"編織月牙腋下包(粉紅)", c:95, p:199, s:1}, {id:"A18", n:"法式跳色月牙腋下包(米白)", c:70, p:199, s:2}, {id:"A19", n:"Y2K鍊條雙肩包", c:90, p:199, s:1}, {id:"A20", n:"JK風日系郵差包(咖)", c:120, p:289, s:1}, {id:"A21", n:"漆皮法棍腋下包(黑)", c:90, p:199, s:2}, {id:"A22", n:"珍珠雙鍊條腋下包(粉)", c:65, p:249, s:1}, {id:"A23", n:"珍珠雙鏈條腋下包(白)", c:65, p:249, s:1}, {id:"A24", n:"法國小眾方形腋下包(黑)", c:60, p:199, s:2}, {id:"A25", n:"法國小眾方形腋下包(紅棕)", c:60, p:199, s:2}, {id:"A26", n:"大容量保齡球包(咖)", c:80, p:289, s:1}, {id:"A27", n:"蕾絲花邊後背包(黑)", c:70, p:199, s:1}, {id:"A28", n:"蕾絲花邊後背包(粉)", c:70, p:199, s:1}, {id:"A29", n:"韓系簡約褶皺雲朵包", c:65, p:199, s:1}, {id:"A30", n:"針織提手包(眼鏡狗)", c:65, p:139, s:2}, {id:"A31", n:"針織提手包(紅格狗)", c:65, p:139, s:2} ]},
         { cat: "B 生活小物", items: [ {id:"B01", n:"迷你磁吸小檯燈(藍)", c:30, p:79, s:3}, {id:"B02", n:"迷你磁吸小檯燈(綠)", c:30, p:79, s:3}, {id:"B03", n:"章魚暖光燈(藍)", c:40, p:89, s:2}, {id:"B04", n:"章魚暖光燈(黃)", c:40, p:89, s:2}, {id:"B05", n:"鬱金香封口夾(黃)", c:15, p:69, s:2}, {id:"B06", n:"鬱金香封口夾(粉)", c:15, p:69, s:2}, {id:"B07", n:"七層漢堡塑膠盤", c:35, p:129, s:2}, {id:"B08", n:"黃色眼睛化妝鏡", c:25, p:99, s:2}, {id:"B09", n:"粉色眼睛化妝鏡", c:25, p:99, s:2}, {id:"B10", n:"丙烯馬克筆(12色)", c:40, p:99, s:2}, {id:"B11", n:"丙烯馬克筆(48色)", c:150, p:259, s:1}, {id:"B12", n:"便利店存錢罐", c:85, p:159, s:1}, {id:"B13", n:"廣角鏡手機支架", c:40, p:99, s:6}, {id:"B14", n:"小麥麥耳機帽", c:30, p:89, s:1}, {id:"B15", n:"多巴胺計算機(黃)", c:45, p:99, s:1}, {id:"B16", n:"多巴胺計算機(紫)", c:45, p:99, s:1}, {id:"B17", n:"多巴胺計算機(白)", c:45, p:99, s:1}, {id:"B18", n:"雲朵鏡", c:15, p:49, s:1}, {id:"B19", n:"酪梨香氛蠟燭", c:20, p:99, s:4}, {id:"B20", n:"橘子香氛蠟燭", c:30, p:99, s:2}, {id:"B21", n:"聖誕樹蠟燭(白)", c:35, p:99, s:2}, {id:"B22", n:"聖誕樹蠟燭(綠)", c:35, p:99, s:2}, {id:"B23", n:"柿子香氛蠟燭", c:45, p:99, s:4}, {id:"B24", n:"山竹香氛蠟燭", c:45, p:99, s:4}, {id:"B25", n:"星星人手機氣囊(摔)", c:10, p:59, s:2}, {id:"B26", n:"星星人手機氣囊(看)", c:10, p:59, s:2}, {id:"B27", n:"無尾熊磁吸氣囊", c:28, p:79, s:2}, {id:"B28", n:"手提抱枕毯(餅乾)", c:135, p:249, s:1}, {id:"B29", n:"手提抱枕毯(巧克力)", c:135, p:249, s:1}, {id:"B30", n:"胡蘿蔔錄音筆", c:30, p:69, s:4}, {id:"B31", n:"可頌掛勾", c:65, p:99, s:8} ]},
