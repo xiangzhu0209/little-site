@@ -143,7 +143,6 @@
 </div>
 
 <script>
-    // --- Firebase 配置 ---
     const firebaseConfig = {
         apiKey: "AIzaSyDn6HtjYMz_FFKU9xjhvV1xXYPr7t36UU0",
         authDomain: "little-nook-aad58.firebaseapp.com",
@@ -157,7 +156,6 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // --- POS 變數 ---
     let inv = JSON.parse(localStorage.getItem('nook_inv')) || []; 
     let orders = [];
     let cart = []; 
@@ -165,7 +163,6 @@
     let currentSearchOrders = []; 
     let sessionPass = ""; 
 
-    // --- 核心權限檢查函式 ---
     function checkAuth() {
         if (!sessionPass) {
             sessionPass = prompt("這是敏感操作，請輸入管理員密碼：");
@@ -173,7 +170,6 @@
         return sessionPass;
     }
 
-    // --- 數據監聽 ---
     db.ref('inventory').on('value', (snapshot) => {
         const data = snapshot.val();
         if(data) {
@@ -192,22 +188,43 @@
         }
     });
 
-    // --- 【更新點 1】徹底修正後的存檔函式 ---
+    // --- 強化版：具備驗證金鑰的存檔函式 ---
     function saveInv() { 
-        if (!checkAuth()) return; 
+        const pass = checkAuth(); 
+        if (!pass) return; 
         
-        // 先嘗試寫入雲端，成功才存本地，失敗就報錯並刷掉畫面
-        db.ref('inventory').set(inv).then(() => {
+        db.ref().update({
+            "inventory": inv,
+            "auth_key": pass  // 此處發送密碼供 Rules 比對
+        }).then(() => {
             localStorage.setItem('nook_inv', JSON.stringify(inv));
             console.log("雲端同步成功");
         }).catch(err => {
-            alert("❌ 儲存失敗！權限不足或密碼錯誤，系統將復原資料。");
+            alert("❌ 儲存失敗！密碼錯誤或權限不足，系統將自動復原資料。");
             sessionPass = ""; 
-            location.reload(); // 強制刷掉剛才在畫面上的錯誤修改
+            location.reload(); 
         });
     }
 
-    // --- 其餘 UI 邏輯 ---
+    // --- 強化版：具備驗證金鑰的刪除紀錄函式 ---
+    function deleteOrder(key) {
+        const pass = checkAuth();
+        if (!pass) return;
+
+        if(confirm("確定刪除此紀錄？")) {
+            db.ref().update({
+                [`orders/${key}`]: null,
+                "auth_key": pass
+            }).then(() => {
+                alert("刪除成功");
+            }).catch(err => {
+                alert("❌ 密碼錯誤，無法刪除！");
+                sessionPass = "";
+                location.reload();
+            });
+        }
+    }
+
     function initUI() {
         const area = document.getElementById('item-area'), nav = document.getElementById('navbar');
         if(!area || !nav) return;
@@ -255,7 +272,6 @@
         document.getElementById('btn-elec').className = m==='電支'?'pay-btn active':'pay-btn';
     }
 
-    // --- 【更新點 2】修正結帳後的同步邏輯 ---
     function submitOrder() {
         if(!cart.length) return;
         const totalAmt = Number(document.getElementById('final-total').innerText);
@@ -270,44 +286,24 @@
             items: [...cart]
         };
 
-        // 建立一個備份，萬一失敗可以還原
         const oldInv = JSON.parse(JSON.stringify(inv));
-
-        // 本地減庫存
         cart.forEach(item => { 
             inv.forEach(cat => (cat.items || []).forEach(it => { if(it.id === item.id) it.s--; })); 
         });
         
-        // 1. 先寫入訂單
         db.ref('orders').push(newOrder).then(() => {
-            // 2. 訂單成功後寫入庫存更新
             return db.ref('inventory').set(inv);
         }).then(() => {
-            // 全部成功
             cart = []; 
             document.getElementById('discount').value = ''; 
             document.getElementById('cash-in').value = '';
             renderCart();
             alert("結帳成功！");
         }).catch(e => {
-            alert("❌ 結帳同步失敗（權限不足或網路問題），庫存未更新。");
-            inv = oldInv; // 還原本地庫存
+            alert("❌ 結帳同步失敗（網路或權限問題），庫存未更新。");
+            inv = oldInv;
             initUI();
         });
-    }
-
-    // --- 管理功能 ---
-    function deleteOrder(key) {
-        if (!checkAuth()) return;
-        if(confirm("確定刪除此紀錄？")) {
-            db.ref('orders/' + key).remove().then(() => {
-                alert("刪除成功");
-            }).catch(err => {
-                alert("權解不足！");
-                sessionPass = "";
-                location.reload();
-            });
-        }
     }
 
     function addNewProduct() {
@@ -415,6 +411,7 @@
         options += `<option value="ADD_NEW_CAT">➕ 新增分類...</option>`;
         select.innerHTML = options;
     }
+
     function checkNewCat(val) {
         if (val === "ADD_NEW_CAT") {
             const newName = prompt("請輸入新分類名稱：");
@@ -422,6 +419,7 @@
             document.getElementById('select-cat').selectedIndex = 0;
         }
     }
+
     function searchHistory(type) {
         let tOrders = [];
         let title = "";
@@ -446,6 +444,7 @@
         currentSearchOrders = tOrders;
         renderHistoryList(title, tOrders);
     }
+
     function renderHistoryList(title, tOrders) {
         const container = document.getElementById('history-result-area');
         if(tOrders.length === 0) { container.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">查無紀錄</p>'; return; }
@@ -458,6 +457,7 @@
         });
         container.innerHTML = html + `</tbody></table>`;
     }
+
     function exportMonthlyExcel() {
         if (currentSearchOrders.length === 0) return;
         const exportData = currentSearchOrders.map(o => ({ "日期": o.d, "時間": o.t, "總額": o.total, "利潤": o.profit, "付款方式": o.pay, "商品代碼": (o.items || []).map(i => i.id).join(', ') }));
@@ -466,6 +466,7 @@
         XLSX.utils.book_append_sheet(wb, ws, "月報表");
         XLSX.writeFile(wb, `LittleNook_月報_${document.getElementById('search-month').value}.xlsx`);
     }
+
     function exportToExcel() {
         if (orders.length === 0) return alert("無資料");
         const exportData = orders.map(o => ({ "日期": o.d, "時間": o.t, "總額": o.total, "利潤": o.profit, "付款方式": o.pay, "明細": (o.items || []).map(i => i.n).join(', ') }));
@@ -476,7 +477,6 @@
     }
 
     if(inv.length > 0) initUI();
-
 </script>
 </body>
 </html>
