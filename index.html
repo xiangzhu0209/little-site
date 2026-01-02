@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🧸 LITTLE NOOK POS (離線強化雲端版)</title>
+    <title>🧸 LITTLE NOOK POS (完整整合版)</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -12,7 +12,7 @@
         :root { --main-brown: #b0a496; --bg-cream: #fcf8f5; --accent-brown: #8c7b6c; --price-red: #d9534f; --profit-green: #6b8e23; }
         body { font-family: sans-serif; background: var(--bg-cream); margin: 0; display: flex; flex-direction: column; height: 100vh; color: #5d5246; overflow: hidden; }
         
-        /* 斷網提醒樣式 */
+        /* 斷網提醒 */
         #net-status { background: #ff4d4d; color: white; text-align: center; padding: 5px; font-weight: bold; display: none; z-index: 9999; }
         #net-status.online { background: #28a745; }
 
@@ -38,7 +38,6 @@
         .pay-btn { flex: 1; padding: 15px; border-radius: 10px; border: 1px solid #ccc; background: white; cursor: pointer; font-weight: bold; font-size: 1.3em;}
         .pay-btn.active { background: var(--accent-brown); color: white; border-color: var(--accent-brown); }
 
-        /* 面板通用樣式 */
         #admin-panel, #history-panel { position: fixed; inset: 10px; background: white; z-index: 1000; border-radius: 20px; display: none; flex-direction: column; padding: 15px; border: 3px solid var(--main-brown); box-shadow: 0 0 50px rgba(0,0,0,0.3); }
         .admin-layout { display: grid; grid-template-columns: 1.6fr 0.9fr; gap: 15px; flex: 1; overflow: hidden; }
         
@@ -53,7 +52,7 @@
         th { background: #f4f4f4; position: sticky; top: 0; padding: 10px; border: 1px solid #ddd; z-index: 5; }
         td { padding: 8px; border: 1px solid #ddd; text-align: center; }
         
-        /* 保持您修正的 180px 寬度 */
+        /* 保持修正的 180px 寬度 */
         .admin-input-name { width: 180px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95em; text-align: left; }
         .admin-input-num { width: 65px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.1em; text-align: center; }
         
@@ -66,7 +65,7 @@
 
 <div id="net-status">⚠️ 目前處於離線狀態，結帳將暫存於本機</div>
 
-<header>🧸 LITTLE NOOK POS (雲端離線整合版)</header>
+<header>🧸 LITTLE NOOK POS (整合穩定版)</header>
 <div class="nav-bar" id="navbar"></div>
 
 <div class="main-content">
@@ -169,13 +168,11 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 優先讀取 LocalStorage
     let inv = JSON.parse(localStorage.getItem('nook_inv')) || []; 
     let orders = JSON.parse(localStorage.getItem('nook_orders')) || [];
     let cart = []; let currentPay = '現金';
     let currentSearchOrders = []; 
 
-    // 網路偵測
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
 
@@ -192,7 +189,6 @@
         }
     }
 
-    // Firebase 同步
     db.ref('inventory').on('value', (snapshot) => {
         const data = snapshot.val();
         if(data) {
@@ -212,7 +208,6 @@
         }
     });
 
-    // 啟動初始化
     if(inv.length > 0) initUI();
     updateOnlineStatus();
 
@@ -221,18 +216,23 @@
         db.ref('inventory').set(inv); 
     }
 
+    // 整合：庫存 0 隱藏邏輯
     function initUI() {
         const area = document.getElementById('item-area'), nav = document.getElementById('navbar');
         if(!area || !nav) return;
         area.innerHTML = ''; nav.innerHTML = '';
         inv.forEach((cat, idx) => {
-            const showItems = (cat.items || []);
-            nav.innerHTML += `<div class="nav-btn" onclick="document.getElementById('c${idx}').scrollIntoView()">${cat.cat}</div>`;
-            let gridHtml = `<div class="cat-title" id="c${idx}">${cat.cat}</div><div class="product-grid">`;
-            showItems.forEach(it => { 
-                gridHtml += `<div class="p-btn" onclick="addCart('${it.id}')"><div class="p-name">${it.id} ${it.n}</div><div class="p-price">$${it.p}</div><div class="p-stock">存:${it.s}</div></div>`;
-            });
-            area.innerHTML += gridHtml + '</div>';
+            // 只抓出庫存大於 0 的
+            const availableItems = (cat.items || []).filter(it => it.s > 0);
+            
+            if (availableItems.length > 0) {
+                nav.innerHTML += `<div class="nav-btn" onclick="document.getElementById('c${idx}').scrollIntoView()">${cat.cat}</div>`;
+                let gridHtml = `<div class="cat-title" id="c${idx}">${cat.cat}</div><div class="product-grid">`;
+                availableItems.forEach(it => { 
+                    gridHtml += `<div class="p-btn" onclick="addCart('${it.id}')"><div class="p-name">${it.id} ${it.n}</div><div class="p-price">$${it.p}</div><div class="p-stock">存:${it.s}</div></div>`;
+                });
+                area.innerHTML += gridHtml + '</div>';
+            }
         });
         updateCatSelect();
         if(document.getElementById('admin-panel').style.display === 'flex') renderAdminTable();
@@ -250,8 +250,8 @@
     }
 
     function calc() {
-        const totalAmount = cart.reduce((a,b)=>a+b.p, 0) - Number(document.getElementById('discount').value || 0);
-        document.getElementById('final-total').innerText = Math.max(0, totalAmount);
+        const totalAmt = cart.reduce((a,b)=>a+b.p, 0) - Number(document.getElementById('discount').value || 0);
+        document.getElementById('final-total').innerText = Math.max(0, totalAmt);
         calcChange();
     }
 
@@ -268,15 +268,15 @@
 
     function submitOrder() {
         if(!cart.length) return;
-        const totalAmount = Number(document.getElementById('final-total').innerText);
+        const totalAmt = Number(document.getElementById('final-total').innerText);
         const cost = cart.reduce((a,b)=>a+(b.c||0), 0);
         
         const newOrder = {
             id: Date.now(),
             t: new Date().toLocaleTimeString(),
             d: new Date().toLocaleDateString(),
-            total: totalAmount,
-            profit: totalAmount - cost,
+            total: totalAmt,
+            profit: totalAmt - cost,
             pay: currentPay,
             items: [...cart]
         };
@@ -285,7 +285,6 @@
             inv.forEach(cat => (cat.items || []).forEach(it => { if(it.id === item.id) it.s--; })); 
         });
 
-        // 存本地與雲端
         orders.unshift(newOrder);
         localStorage.setItem('nook_orders', JSON.stringify(orders));
         db.ref('orders').push(newOrder);
@@ -422,7 +421,6 @@
     function deleteOrder(key) {
         if(confirm("確定刪除此紀錄？")) {
             if(key) db.ref('orders/' + key).remove();
-            // 同步移除本地 orders
             orders = orders.filter(o => o.firebaseKey !== key);
             localStorage.setItem('nook_orders', JSON.stringify(orders));
             updateLog(); renderStatTable();
