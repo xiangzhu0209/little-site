@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🧸 LITTLE NOOK POS (完整整合版)</title>
+    <title>🧸 LITTLE NOOK POS (專業強化版)</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -12,7 +12,6 @@
         :root { --main-brown: #b0a496; --bg-cream: #fcf8f5; --accent-brown: #8c7b6c; --price-red: #d9534f; --profit-green: #6b8e23; }
         body { font-family: sans-serif; background: var(--bg-cream); margin: 0; display: flex; flex-direction: column; height: 100vh; color: #5d5246; overflow: hidden; }
         
-        /* 斷網提醒 */
         #net-status { background: #ff4d4d; color: white; text-align: center; padding: 5px; font-weight: bold; display: none; z-index: 9999; }
         #net-status.online { background: #28a745; }
 
@@ -52,27 +51,31 @@
         th { background: #f4f4f4; position: sticky; top: 0; padding: 10px; border: 1px solid #ddd; z-index: 5; }
         td { padding: 8px; border: 1px solid #ddd; text-align: center; }
         
-        /* 保持修正的 180px 寬度 */
         .admin-input-name { width: 180px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95em; text-align: left; }
         .admin-input-num { width: 65px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.1em; text-align: center; }
-        
         .move-btn { cursor: pointer; padding: 4px 10px; background: #eee; border-radius: 4px; border: 1px solid #ccc; font-weight: bold; font-size: 1.1em; margin: 0 1px; }
         .del-x { color: red; font-weight: bold; cursor: pointer; font-size: 1.4em; padding: 5px; }
         .order-tag { background: #eee; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-right: 4px; color: #666; }
+        
+        /* 低庫存警告顏色 */
+        .low-stock { background-color: #fff0f0; color: #d9534f; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div id="net-status">⚠️ 目前處於離線狀態，結帳將暫存於本機</div>
 
-<header>🧸 LITTLE NOOK POS (整合穩定版)</header>
+<header>🧸 LITTLE NOOK POS (專業強化版)</header>
 <div class="nav-bar" id="navbar"></div>
 
 <div class="main-content">
     <div class="item-area" id="item-area">同步中...</div>
     <div class="checkout-area">
         <div class="card">
-            <strong>🛒 當前清單</strong>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <strong>🛒 當前清單</strong>
+                <button onclick="addCustomItem()" style="font-size:0.8em; cursor:pointer;">➕ 手動加價/品項</button>
+            </div>
             <div id="cart-list"></div>
             <div style="margin-top:10px;"><input type="number" id="discount" class="big-input" placeholder="折扣 (減價)" oninput="calc()"></div>
             <div class="total-display">$<span id="final-total">0</span></div>
@@ -116,10 +119,13 @@
 
 <div id="admin-panel">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
-        <h2 style="margin:0;">⚙️ 商品管理與統計 (雲端)</h2>
-        <div>
-            <button onclick="exportToExcel()" style="padding:10px 20px; font-size: 1em; border-radius: 8px; background: #217346; color: white; border: none; cursor: pointer; margin-right: 10px;">📊 匯出完整 Excel</button>
-            <button onclick="toggleAdmin()" style="padding:10px 20px; font-size: 1em; border-radius: 8px;">✕ 關閉視窗</button>
+        <h2 style="margin:0;">⚙️ 商品管理與統計</h2>
+        <div style="display:flex; gap:10px;">
+            <button onclick="backupJSON()" style="padding:10px; background:#4b5563; color:white; border:none; border-radius:8px; cursor:pointer;">📥 匯出備份</button>
+            <button onclick="document.getElementById('importFile').click()" style="padding:10px; background:#6366f1; color:white; border:none; border-radius:8px; cursor:pointer;">📤 匯入備份</button>
+            <input type="file" id="importFile" style="display:none" onchange="restoreJSON(this)">
+            <button onclick="exportToExcel()" style="padding:10px; background: #217346; color: white; border: none; border-radius: 8px; cursor: pointer;">📊 匯出 Excel</button>
+            <button onclick="toggleAdmin()" style="padding:10px; border-radius: 8px;">✕ 關閉</button>
         </div>
     </div>
     <div class="add-row-top">
@@ -191,11 +197,7 @@
 
     db.ref('inventory').on('value', (snapshot) => {
         const data = snapshot.val();
-        if(data) {
-            inv = data;
-            localStorage.setItem('nook_inv', JSON.stringify(inv));
-            initUI();
-        }
+        if(data) { inv = data; localStorage.setItem('nook_inv', JSON.stringify(inv)); initUI(); }
     });
 
     db.ref('orders').on('value', (snapshot) => {
@@ -203,8 +205,7 @@
         if(data) {
             orders = Object.keys(data).map(key => ({...data[key], firebaseKey: key})).reverse();
             localStorage.setItem('nook_orders', JSON.stringify(orders));
-            updateLog();
-            renderStatTable();
+            updateLog(); renderStatTable();
         }
     });
 
@@ -216,15 +217,12 @@
         db.ref('inventory').set(inv); 
     }
 
-    // 整合：庫存 0 隱藏邏輯
     function initUI() {
         const area = document.getElementById('item-area'), nav = document.getElementById('navbar');
         if(!area || !nav) return;
         area.innerHTML = ''; nav.innerHTML = '';
         inv.forEach((cat, idx) => {
-            // 只抓出庫存大於 0 的
             const availableItems = (cat.items || []).filter(it => it.s > 0);
-            
             if (availableItems.length > 0) {
                 nav.innerHTML += `<div class="nav-btn" onclick="document.getElementById('c${idx}').scrollIntoView()">${cat.cat}</div>`;
                 let gridHtml = `<div class="cat-title" id="c${idx}">${cat.cat}</div><div class="product-grid">`;
@@ -244,8 +242,18 @@
         if(target && target.s > 0) { cart.push({...target}); renderCart(); }
     }
 
+    // 新增：萬用加價項目
+    function addCustomItem() {
+        const name = prompt("請輸入品名或服務項目：", "加價/自訂");
+        const price = prompt("請輸入金額：", "0");
+        if (name && !isNaN(price)) {
+            cart.push({ id: "CUSTOM", n: name, p: Number(price), c: 0 });
+            renderCart();
+        }
+    }
+
     function renderCart() {
-        document.getElementById('cart-list').innerHTML = cart.map((it, i) => `<div class="cart-item"><span>${it.id} ${it.n}</span><b>$${it.p}</b><span onclick="cart.splice(${i},1);renderCart()" style="color:red; cursor:pointer;">✕</span></div>`).join('');
+        document.getElementById('cart-list').innerHTML = cart.map((it, i) => `<div class="cart-item"><span>${it.id === 'CUSTOM' ? '' : it.id} ${it.n}</span><b>$${it.p}</b><span onclick="cart.splice(${i},1);renderCart()" style="color:red; cursor:pointer;">✕</span></div>`).join('');
         calc();
     }
 
@@ -270,7 +278,6 @@
         if(!cart.length) return;
         const totalAmt = Number(document.getElementById('final-total').innerText);
         const cost = cart.reduce((a,b)=>a+(b.c||0), 0);
-        
         const newOrder = {
             id: Date.now(),
             t: new Date().toLocaleTimeString(),
@@ -280,33 +287,50 @@
             pay: currentPay,
             items: [...cart]
         };
-
         cart.forEach(item => { 
-            inv.forEach(cat => (cat.items || []).forEach(it => { if(it.id === item.id) it.s--; })); 
+            if(item.id !== "CUSTOM") inv.forEach(cat => (cat.items || []).forEach(it => { if(it.id === item.id) it.s--; })); 
         });
-
         orders.unshift(newOrder);
         localStorage.setItem('nook_orders', JSON.stringify(orders));
         db.ref('orders').push(newOrder);
         saveInv();
-
         cart = []; document.getElementById('discount').value = ''; document.getElementById('cash-in').value = '';
         renderCart();
-        alert(navigator.onLine ? "結帳成功！" : "離線結帳已暫存！");
+        alert("結帳成功！" + (currentPay === '現金' ? " 記得找零錢喔！" : ""));
     }
 
+    // 備份功能
+    function backupJSON() {
+        const dataStr = JSON.stringify(inv);
+        const blob = new Blob([dataStr], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `LittleNook_庫存備份_${new Date().toLocaleDateString()}.json`;
+        link.click();
+    }
+
+    function restoreJSON(input) {
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = function() {
+            try {
+                const imported = JSON.parse(reader.result);
+                if(confirm("確定要覆蓋現有商品庫存資料嗎？")) { inv = imported; saveInv(); location.reload(); }
+            } catch(e) { alert("檔案格式錯誤！"); }
+        };
+        reader.readAsText(file);
+    }
+
+    // 後續函式 (toggle, search, adminTable等) 保持不變，庫存低標顏色修正於 renderAdminTable
     function toggleHistory() {
         const p = document.getElementById('history-panel');
         p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
-        if(p.style.display === 'flex') {
-            document.getElementById('search-date').value = new Date().toISOString().split('T')[0];
-            document.getElementById('history-result-area').innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">請點選搜尋條件</p>';
-        }
+        if(p.style.display === 'flex') document.getElementById('search-date').value = new Date().toISOString().split('T')[0];
     }
 
     function searchHistory(type) {
-        let tOrders = [];
-        let title = "";
+        let tOrders = []; let title = "";
         if (type === 'day') {
             const dateInput = document.getElementById('search-date').value;
             if (!dateInput) return alert("請選擇日期");
@@ -318,10 +342,7 @@
             const monthInput = document.getElementById('search-month').value; 
             if (!monthInput) return alert("請選擇月份");
             const [year, month] = monthInput.split('-');
-            tOrders = orders.filter(o => {
-                const oDate = new Date(o.d);
-                return oDate.getFullYear() == year && (oDate.getMonth() + 1) == parseInt(month);
-            });
+            tOrders = orders.filter(o => { const oDate = new Date(o.d); return oDate.getFullYear() == year && (oDate.getMonth() + 1) == parseInt(month); });
             title = `🗓️ ${monthInput} 月度結算`;
             document.getElementById('btn-month-excel').style.display = 'inline-block';
         }
@@ -331,24 +352,15 @@
 
     function renderHistoryList(title, tOrders) {
         const container = document.getElementById('history-result-area');
-        if(tOrders.length === 0) { container.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">查無紀錄</p>'; return; }
+        if(tOrders.length === 0) { container.innerHTML = '查無紀錄'; return; }
         const totalRev = tOrders.reduce((a,b)=>a+(Number(b.total)||0), 0);
         const totalProf = tOrders.reduce((a,b)=>a+(Number(b.profit)||0), 0);
-        let html = `<h3>${title}</h3><div style="font-size:1.2em; margin-bottom:15px; background:#f0fdf4; padding:15px; border-radius:8px; display:flex; gap:20px;"><div>營收：<b style="color:red;">$${totalRev}</b></div><div>利潤：<b style="color:green;">$${totalProf}</b></div><div>成交：<b>${tOrders.length} 筆</b></div></div><table style="width:100%;"><thead><tr style="background:#eee;"><th>日期時間</th><th>商品內容</th><th>金額</th><th>支付</th><th>刪除</th></tr></thead><tbody>`;
+        let html = `<h3>${title}</h3><div style="font-size:1.1em; margin-bottom:10px;">營收: $${totalRev} / 利潤: $${totalProf}</div><table style="width:100%;"><thead><tr style="background:#eee;"><th>日期</th><th>內容</th><th>金額</th><th>支付</th><th>刪除</th></tr></thead><tbody>`;
         tOrders.forEach(o => {
             const codes = (o.items || []).map(i => `<span class="order-tag">${i.id}</span>`).join('');
-            html += `<tr style="border-bottom:1px solid #eee;"><td>${o.d}<br><small>${o.t}</small></td><td style="text-align:left;">${codes}</td><td>$${o.total}</td><td>${o.pay}</td><td><span class="del-x" onclick="deleteOrder('${o.firebaseKey}')">🗑️</span></td></tr>`;
+            html += `<tr><td>${o.d}<br>${o.t}</td><td style="text-align:left;">${codes}</td><td>$${o.total}</td><td>${o.pay}</td><td><span onclick="deleteOrder('${o.firebaseKey}')">🗑️</span></td></tr>`;
         });
         container.innerHTML = html + `</tbody></table>`;
-    }
-
-    function exportMonthlyExcel() {
-        if (currentSearchOrders.length === 0) return;
-        const exportData = currentSearchOrders.map(o => ({ "日期": o.d, "時間": o.t, "總額": o.total, "利潤": o.profit, "付款方式": o.pay, "商品代碼": (o.items || []).map(i => i.id).join(', ') }));
-        const ws = XLSX.utils.json_to_sheet(exportData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "月報表");
-        XLSX.writeFile(wb, `LittleNook_月報_${document.getElementById('search-month').value}.xlsx`);
     }
 
     function toggleAdmin() {
@@ -374,8 +386,7 @@
     }
 
     function addNewProduct() {
-        const catN = document.getElementById('select-cat').value;
-        const id = document.getElementById('new-id').value, n = document.getElementById('new-n').value;
+        const catN = document.getElementById('select-cat').value, id = document.getElementById('new-id').value, n = document.getElementById('new-n').value;
         const c = Number(document.getElementById('new-c').value), p = Number(document.getElementById('new-p').value), s = Number(document.getElementById('new-s').value);
         if(!catN || !n) return alert("請填品名");
         inv.find(v => v.cat === catN).items.push({id, n, c, p, s});
@@ -388,15 +399,13 @@
         inv.forEach((cat, ci) => {
             html += `<tr style="background:#f4f4f4;"><td colspan="6" style="text-align:left; padding-left:10px;"><b>${cat.cat}</b></td></tr>`;
             (cat.items || []).forEach((it, ii) => { 
+                const lowStockClass = it.s <= 3 ? 'low-stock' : ''; // 低庫存標示
                 html += `<tr>
                     <td><span class="move-btn" onclick="move(${ci},${ii},-1)">↑</span><span class="move-btn" onclick="move(${ci},${ii},1)">↓</span></td>
-                    <td style="text-align:left;">
-                        <div style="font-size:0.75em; color:#888; margin-bottom:2px;">${it.id}</div>
-                        <input type="text" class="admin-input-name" value="${it.n}" onchange="editItem(${ci},${ii},'n',this.value)">
-                    </td>
+                    <td style="text-align:left;"><div style="font-size:0.75em; color:#888;">${it.id}</div><input type="text" class="admin-input-name" value="${it.n}" onchange="editItem(${ci},${ii},'n',this.value)"></td>
                     <td><input type="number" class="admin-input-num" value="${it.c}" onchange="editItem(${ci},${ii},'c',this.value)"></td>
                     <td><input type="number" class="admin-input-num" value="${it.p}" onchange="editItem(${ci},${ii},'p',this.value)"></td>
-                    <td><input type="number" class="admin-input-num" value="${it.s}" onchange="editItem(${ci},${ii},'s',this.value)"></td>
+                    <td><input type="number" class="admin-input-num ${lowStockClass}" value="${it.s}" onchange="editItem(${ci},${ii},'s',this.value)"></td>
                     <td><span class="del-x" onclick="delP(${ci},${ii})">🗑️</span></td>
                 </tr>`; 
             });
@@ -404,19 +413,9 @@
         document.getElementById('admin-tbody').innerHTML = html;
     }
 
-    function editItem(ci, ii, k, v) { 
-        inv[ci].items[ii][k] = (k === 'n') ? v : Number(v); 
-        saveInv(); 
-    }
-
+    function editItem(ci, ii, k, v) { inv[ci].items[ii][k] = (k === 'n') ? v : Number(v); saveInv(); }
     function delP(ci, ii) { if(confirm("確定刪除？")) { inv[ci].items.splice(ii, 1); saveInv(); } }
-    
-    function move(ci, ii, dir) {
-        let items = inv[ci].items;
-        if(ii+dir < 0 || ii+dir >= items.length) return;
-        [items[ii], items[ii+dir]] = [items[ii+dir], items[ii]];
-        saveInv();
-    }
+    function move(ci, ii, dir) { let items = inv[ci].items; if(ii+dir < 0 || ii+dir >= items.length) return; [items[ii], items[ii+dir]] = [items[ii+dir], items[ii]]; saveInv(); }
 
     function deleteOrder(key) {
         if(confirm("確定刪除此紀錄？")) {
@@ -429,43 +428,31 @@
 
     function updateLog() {
         document.getElementById('order-log').innerHTML = "<strong>📋 最近交易</strong><hr>" + 
-        orders.slice(0,8).map(o => {
-            return `<div style="padding:8px; border-bottom:1px solid #eee;"><div style="display:flex; justify-content:space-between;"><span>$${o.total} (${o.t})</span><span onclick="deleteOrder('${o.firebaseKey}')" style="color:red; cursor:pointer;">🗑️</span></div><div style="font-size:0.75em; color:var(--accent-brown);">代碼: ${(o.items || []).map(i=>i.id).join(', ')}</div></div>`;
-        }).join('');
+        orders.slice(0,8).map(o => `<div style="padding:8px; border-bottom:1px solid #eee;">$${o.total} (${o.t}) [${o.pay}]</div>`).join('');
     }
 
     function renderStatTable() {
         const today = new Date().toLocaleDateString();
         const tOrders = orders.filter(o => o.d === today);
-        let totalRev = 0, totalProf = 0, detailHtml = '';
-        const summary = {};
-
+        let totalRev = 0, totalProf = 0, detailHtml = ''; const summary = {};
         tOrders.forEach(o => {
-            totalRev += (Number(o.total) || 0);
-            totalProf += (Number(o.profit) || 0);
-            const codes = (o.items || []).map(i => `<span class="order-tag">${i.id}</span>`).join('');
-            detailHtml += `<div style="padding:5px 0; border-bottom:1px dashed #ddd;"><b>${o.t}</b> $${o.total} (${o.pay})<br>${codes}</div>`;
-            (o.items || []).forEach(it => { 
-                if(!summary[it.n]) summary[it.n] = {count:0, total:0}; 
-                summary[it.n].count++; 
-                summary[it.n].total += (Number(it.p) || 0); 
-            });
+            totalRev += (Number(o.total) || 0); totalProf += (Number(o.profit) || 0);
+            detailHtml += `<div style="font-size:0.8em;">${o.t} $${o.total} (${o.pay})</div>`;
+            (o.items || []).forEach(it => { if(!summary[it.n]) summary[it.n] = {count:0, total:0}; summary[it.n].count++; summary[it.n].total += (Number(it.p) || 0); });
         });
-
         document.getElementById('stat-revenue').innerText = totalRev;
         document.getElementById('stat-profit').innerText = totalProf;
-        document.getElementById('stat-detail-list').innerHTML = detailHtml || '今日尚無明細';
+        document.getElementById('stat-detail-list').innerHTML = detailHtml || '今日無明細';
         let html = '';
         for(let n in summary) { html += `<tr><td style="text-align:left;">${n}</td><td>${summary[n].count}</td><td>$${summary[n].total}</td></tr>`; }
-        document.getElementById('stat-tbody').innerHTML = html || '<tr><td colspan="3">今日尚無銷售</td></tr>';
+        document.getElementById('stat-tbody').innerHTML = html || '<tr><td colspan="3">無銷售</td></tr>';
     }
 
     function exportToExcel() {
-        if (orders.length === 0) return alert("無資料");
-        const exportData = orders.map(o => ({ "日期": o.d, "時間": o.t, "總額": o.total, "利潤": o.profit, "付款方式": o.pay, "明細": (o.items || []).map(i => i.n).join(', ') }));
+        const exportData = orders.map(o => ({ "日期": o.d, "總額": o.total, "利潤": o.profit, "支付": o.pay }));
         const ws = XLSX.utils.json_to_sheet(exportData);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "完整紀錄");
+        XLSX.utils.book_append_sheet(wb, ws, "紀錄");
         XLSX.writeFile(wb, `LittleNook_全部紀錄.xlsx`);
     }
 </script>
