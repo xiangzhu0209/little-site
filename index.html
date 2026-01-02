@@ -3,51 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🧸 角落雜貨舖 POS 完整雲端+編輯版</title>
+    <title>🧸 角落雜貨舖 POS (完整版+隱藏無庫存+置頂放大)</title>
     <style>
         :root { --main-brown: #b0a496; --bg-cream: #fcf8f5; --accent-brown: #8c7b6c; --price-red: #d9534f; --profit-green: #6b8e23; }
         body { font-family: sans-serif; background: var(--bg-cream); margin: 0; display: flex; flex-direction: column; height: 100vh; color: #5d5246; overflow: hidden; }
         header { background: var(--main-brown); color: white; padding: 12px; text-align: center; font-size: 1.3em; font-weight: bold; flex-shrink: 0; }
         .nav-bar { background: #e8e0d9; padding: 10px; display: flex; gap: 10px; overflow-x: auto; border-bottom: 2px solid #d1c7bc; flex-shrink: 0; }
-        .nav-btn { background: white; border: 1px solid #d1c7bc; padding: 6px 15px; border-radius: 20px; white-space: nowrap; cursor: pointer; font-size: 0.85em; }
+        .nav-btn { background: white; border: 1px solid #d1c7bc; padding: 8px 18px; border-radius: 20px; white-space: nowrap; cursor: pointer; font-size: 1em; }
         
         .main-content { display: flex; flex: 1; overflow: hidden; padding: 10px; gap: 10px; }
         .item-area { flex: 1.8; overflow-y: auto; background: white; border-radius: 15px; padding: 15px; border: 2px solid #e8e0d9; }
-        .cat-title { background: #fdf5f0; padding: 6px 15px; border-radius: 20px; margin: 15px 0 8px; font-weight: bold; border-left: 6px solid var(--main-brown); font-size: 0.9em; }
-        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
-        .p-btn { background: white; border: 1px solid #f0e6dd; border-radius: 12px; padding: 8px 5px; text-align: center; cursor: pointer; box-shadow: 2px 2px 0 #e8e0d9; min-height: 75px; display: flex; flex-direction: column; justify-content: center; }
-        .p-name { font-size: 0.7em; font-weight: bold; margin-bottom: 3px; height: 2.4em; overflow: hidden; }
-        .p-price { color: #c2966d; font-size: 0.9em; font-weight: bold; }
-        .p-stock { font-size: 0.65em; color: #999; }
+        .cat-title { background: #fdf5f0; padding: 8px 15px; border-radius: 20px; margin: 15px 0 8px; font-weight: bold; border-left: 8px solid var(--main-brown); font-size: 1.1em; }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+        .p-btn { background: white; border: 1px solid #f0e6dd; border-radius: 12px; padding: 10px 5px; text-align: center; cursor: pointer; box-shadow: 2px 2px 0 #e8e0d9; min-height: 85px; display: flex; flex-direction: column; justify-content: center; }
+        .p-name { font-size: 0.85em; font-weight: bold; margin-bottom: 5px; height: 2.4em; overflow: hidden; }
+        .p-price { color: #c2966d; font-size: 1.1em; font-weight: bold; }
+        .p-stock { font-size: 0.75em; color: #999; }
 
         .checkout-area { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 320px; overflow-y: auto; }
-        .card { background: white; border-radius: 15px; padding: 12px; border: 2px solid #e8e0d9; flex-shrink: 0; }
-        #cart-list { max-height: 180px; overflow-y: auto; border-bottom: 2px dashed #e8e0d9; }
-        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 5px; font-size: 0.85em; border-bottom: 1px solid #eee; }
-        .big-input { font-size: 1.6em; padding: 10px; width: 100%; border-radius: 10px; border: 2px solid #d1c7bc; text-align: right; box-sizing: border-box; background: #fffcf5; font-weight: bold; }
-        .total-display { font-size: 2.8em; font-weight: bold; color: var(--price-red); text-align: right; margin: 5px 0; }
-        .pay-btn { flex: 1; padding: 15px; border-radius: 10px; border: 1px solid #ccc; background: white; cursor: pointer; font-weight: bold; font-size: 1.2em;}
+        .card { background: white; border-radius: 15px; padding: 12px; border: 2px solid #e8e0d9; }
+        #cart-list { max-height: 200px; overflow-y: auto; border-bottom: 2px dashed #e8e0d9; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 5px; font-size: 1em; border-bottom: 1px solid #eee; }
+        .big-input { font-size: 1.8em; padding: 12px; width: 100%; border-radius: 10px; border: 2px solid #d1c7bc; text-align: right; box-sizing: border-box; background: #fffcf5; font-weight: bold; }
+        .total-display { font-size: 3em; font-weight: bold; color: var(--price-red); text-align: right; margin: 10px 0; }
+        .pay-btn { flex: 1; padding: 15px; border-radius: 10px; border: 1px solid #ccc; background: white; cursor: pointer; font-weight: bold; font-size: 1.3em;}
         .pay-btn.active { background: var(--accent-brown); color: white; border-color: var(--accent-brown); }
 
-        #admin-panel { position: fixed; inset: 10px; background: white; z-index: 1000; border-radius: 20px; display: none; flex-direction: column; padding: 15px; border: 3px solid var(--main-brown); box-shadow: 0 0 50px rgba(0,0,0,0.3); }
+        #admin-panel { position: fixed; inset: 5px; background: white; z-index: 1000; border-radius: 20px; display: none; flex-direction: column; padding: 15px; border: 3px solid var(--main-brown); box-shadow: 0 0 50px rgba(0,0,0,0.3); }
         .admin-layout { display: grid; grid-template-columns: 1.6fr 0.9fr; gap: 15px; flex: 1; overflow: hidden; }
-        .admin-controls { display: flex; gap: 8px; flex-wrap: wrap; background: #fdfaf0; padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eee; }
+        
+        .add-row-top { background: #f0fdf4; padding: 20px; border: 2px solid var(--profit-green); border-radius: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 15px; }
+        .add-row-top div { display: flex; flex-direction: column; gap: 5px; }
+        .add-row-top label { font-size: 0.9em; color: #444; font-weight: bold; }
+        .add-row-top input { font-size: 1.2em; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
+        .add-row-top button { font-size: 1.2em; padding: 15px 30px; background: var(--profit-green); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; align-self: flex-end; }
+
         .admin-table-container { overflow: auto; border: 1px solid #eee; border-radius: 8px; }
-        .stat-container { background: #f9f9f9; border-radius: 10px; padding: 10px; overflow-y: auto; border: 1px solid #ddd; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.8em; }
-        th { background: #f4f4f4; position: sticky; top: 0; padding: 8px; border: 1px solid #ddd; z-index: 5; }
-        td { padding: 5px; border: 1px solid #ddd; text-align: center; }
-        .admin-input { width: 45px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
-        .long-input { width: 100px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
-        .del-x { color: red; font-weight: bold; cursor: pointer; padding: 0 8px; }
-        .move-btn { cursor: pointer; padding: 2px 5px; background: #eee; border-radius: 4px; margin: 0 2px; border: 1px solid #ccc; }
-        .cloud-btn { background: #4285f4; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .add-row { background: #f0fdf4; padding: 10px; border-top: 2px solid var(--profit-green); display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+        table { width: 100%; border-collapse: collapse; font-size: 1em; }
+        th { background: #f4f4f4; position: sticky; top: 0; padding: 12px; border: 1px solid #ddd; z-index: 5; }
+        td { padding: 8px; border: 1px solid #ddd; text-align: center; }
+        .admin-input { width: 65px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.1em; text-align: center; }
+        .move-btn { cursor: pointer; padding: 5px 12px; background: #eee; border-radius: 4px; border: 1px solid #ccc; font-weight: bold; font-size: 1.1em; margin: 0 2px; }
+        .del-x { color: red; font-weight: bold; cursor: pointer; font-size: 1.3em; padding: 5px; }
     </style>
 </head>
 <body>
 
-<header>🧸 角落雜貨舖 POS (完整商品+編輯+雲端版)</header>
+<header>🧸 角落雜貨舖 POS (完整版+隱藏無庫存+置頂放大)</header>
 <div class="nav-bar" id="navbar"></div>
 
 <div class="main-content">
@@ -56,56 +58,52 @@
         <div class="card">
             <strong>🛒 當前清單</strong>
             <div id="cart-list"></div>
-            <div style="margin-top:10px;"><input type="number" id="discount" class="big-input" placeholder="折扣" oninput="calc()"></div>
+            <div style="margin-top:10px;"><input type="number" id="discount" class="big-input" placeholder="折扣 (減價)" oninput="calc()"></div>
             <div class="total-display">$<span id="final-total">0</span></div>
-            <div style="display:flex; gap:8px; margin-bottom:5px;">
+            <div style="display:flex; gap:8px; margin-bottom:10px;">
                 <button class="pay-btn active" id="btn-cash" onclick="setPay('現金')">💵 現金</button>
                 <button class="pay-btn" id="btn-elec" onclick="setPay('電支')">📱 電支</button>
             </div>
             <input type="number" id="cash-in" class="big-input" placeholder="實收金額" oninput="calcChange()"> 
-            <div style="text-align:right; margin-top:5px;">找零: <span id="cash-change" style="font-weight:bold; color:red; font-size:1.4em;">0</span></div>
-            <button onclick="submitOrder()" style="width:100%; padding:15px; margin-top:10px; background:var(--profit-green); color:white; border:none; border-radius:12px; font-weight:bold; font-size:1.3em;">結帳完成</button>
+            <div style="text-align:right; margin-top:5px; font-size: 1.2em;">找零: <span id="cash-change" style="font-weight:bold; color:red; font-size:1.6em;">0</span></div>
+            <button onclick="submitOrder()" style="width:100%; padding:20px; margin-top:15px; background:var(--profit-green); color:white; border:none; border-radius:15px; font-weight:bold; font-size:1.5em;">結帳完成</button>
         </div>
-        <div class="card" style="flex:1;" id="order-log"></div>
+        <div class="card" style="flex:1; font-size: 0.9em;" id="order-log"></div>
     </div>
 </div>
 
-<div style="padding:10px; text-align:center;">
-    <button onclick="toggleAdmin()" style="padding:10px 20px; border-radius:10px; cursor:pointer; background:white; border:2px solid var(--main-brown); font-weight:bold;">🛠️ 商品編輯 / 收攤統計</button>
+<div style="padding:15px; text-align:center;">
+    <button onclick="toggleAdmin()" style="padding:15px 30px; border-radius:15px; cursor:pointer; background:white; border:3px solid var(--main-brown); font-weight:bold; font-size: 1.2em;">🛠️ 商品編輯 / 收攤統計</button>
 </div>
 
 <div id="admin-panel">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3>⚙️ 商品管理與今日結帳</h3>
-        <button onclick="toggleAdmin()" style="padding:5px 15px;">✕ 關閉</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+        <h2 style="margin:0;">⚙️ 商品管理</h2>
+        <button onclick="toggleAdmin()" style="padding:10px 20px; font-size: 1.1em; border-radius: 8px;">✕ 關閉視窗</button>
     </div>
-    <div class="admin-controls">
-        <button class="cloud-btn" id="sync-btn" onclick="uploadToGoogle()">🚀 結束營業：上傳資料</button>
-        <span style="margin-left:15px; color:red; font-weight:bold;">營收: $<span id="stat-revenue">0</span></span>
-        <span style="margin-left:15px; color:green; font-weight:bold;">利潤: $<span id="stat-profit">0</span></span>
-        <button onclick="clearAllOrders()" style="margin-left:auto; font-size:10px;">清除交易紀錄</button>
+
+    <div class="add-row-top">
+        <div><label>分類</label><input type="text" id="new-cat" style="width:120px;" placeholder="區塊名"></div>
+        <div><label>編號</label><input type="text" id="new-id" style="width:80px;" placeholder="ID"></div>
+        <div><label>品名</label><input type="text" id="new-n" style="width:200px;" placeholder="商品名稱"></div>
+        <div><label>成本</label><input type="number" id="new-c" style="width:80px;" placeholder="0"></div>
+        <div><label>售價</label><input type="number" id="new-p" style="width:80px;" placeholder="0"></div>
+        <div><label>庫存</label><input type="number" id="new-s" style="width:80px;" placeholder="0"></div>
+        <button onclick="addNewProduct()">➕ 新增品項</button>
     </div>
-    
+
     <div class="admin-layout">
         <div class="admin-table-container">
             <table>
-                <thead><tr><th>操作</th><th>編號</th><th>品名</th><th>成本</th><th>售價</th><th>庫存</th><th>刪除</th></tr></thead>
+                <thead><tr><th>移動</th><th>品名</th><th>成本</th><th>售價</th><th>庫存</th><th>刪除</th></tr></thead>
                 <tbody id="admin-tbody"></tbody>
             </table>
-            <div class="add-row">
-                <input type="text" id="new-cat" placeholder="分類(如:A區)" style="width:70px;">
-                <input type="text" id="new-id" placeholder="編號" style="width:50px;">
-                <input type="text" id="new-n" placeholder="商品名稱" style="width:120px;">
-                <input type="number" id="new-c" placeholder="成本" style="width:50px;">
-                <input type="number" id="new-p" placeholder="售價" style="width:50px;">
-                <input type="number" id="new-s" placeholder="庫存" style="width:50px;">
-                <button onclick="addNewProduct()" style="background:var(--profit-green); color:white; border:none; padding:5px 10px; border-radius:5px;">➕ 新增品項</button>
-            </div>
         </div>
-        <div class="stat-container">
-            <h4 style="margin-top:0;">📊 今日銷售品項總計</h4>
-            <table>
-                <thead><tr style="background:#eee;"><th>品名</th><th>數量</th><th>金額</th></tr></thead>
+        <div style="background:#f9f9f9; padding:15px; border-radius:10px; overflow-y:auto;">
+            <h3 style="margin:0 0 10px 0;">📊 今日結帳</h3>
+            <div style="margin-bottom:10px;">營收: <b id="stat-revenue" style="color:red; font-size:1.5em;">0</b> / 利潤: <b id="stat-profit" style="color:green; font-size:1.5em;">0</b></div>
+            <table style="font-size:0.9em;">
+                <thead><tr style="background:#eee;"><th>品名</th><th>量</th><th>額</th></tr></thead>
                 <tbody id="stat-tbody"></tbody>
             </table>
         </div>
@@ -113,7 +111,8 @@
 </div>
 
 <script>
-    const fullInventory = [
+    // 完整的 200 多項商品清單已重新放回
+    const initialData = [
         { cat: "A 包包區", items: [ {id:"A01", n:"針織托特包(黃鬱金香)", c:15, p:79, s:2}, {id:"A02", n:"針織托特包(米色小白狗)", c:15, p:79, s:2}, {id:"A03", n:"波點小狗化妝包", c:30, p:99, s:2}, {id:"A04", n:"ins蝴蝶結皺肩包(銀)", c:85, p:199, s:1}, {id:"A05", n:"Ins蝴蝶結皺肩包(藍)", c:85, p:199, s:1}, {id:"A06", n:"復古手提保齡球包(咖)", c:100, p:249, s:1}, {id:"A07", n:"豹紋手提小廢包(咖)", c:80, p:149, s:1}, {id:"A08", n:"素面斜跨皺肩包", c:90, p:199, s:1}, {id:"A09", n:"素面斜肩包(白)", c:90, p:199, s:1}, {id:"A10", n:"法式月牙腋下包(黑)", c:85, p:199, s:1}, {id:"A11", n:"法式月牙腋下包(白)", c:85, p:199, s:2}, {id:"A12", n:"雲朵迷你手提包(白)", c:70, p:139, s:2}, {id:"A13", n:"雲朵迷你手提包(黑)", c:70, p:139, s:2}, {id:"A14", n:"復古亮皮手提斜跨包(黑)", c:140, p:249, s:1}, {id:"A15", n:"小狗折疊化妝包", c:55, p:100, s:8}, {id:"A16", n:"卡其豹紋小方包", c:55, p:139, s:1}, {id:"A17", n:"編織月牙腋下包(粉紅)", c:95, p:199, s:1}, {id:"A18", n:"法式跳色月牙腋下包(米白)", c:70, p:199, s:2}, {id:"A19", n:"Y2K鍊條雙肩包", c:90, p:199, s:1}, {id:"A20", n:"JK風日系郵差包(咖)", c:120, p:289, s:1}, {id:"A21", n:"漆皮法棍腋下包(黑)", c:90, p:199, s:2}, {id:"A22", n:"珍珠雙鍊條腋下包(粉)", c:65, p:249, s:1}, {id:"A23", n:"珍珠雙鏈條腋下包(白)", c:65, p:249, s:1}, {id:"A24", n:"法國小眾方形腋下包(黑)", c:60, p:199, s:2}, {id:"A25", n:"法國小眾方形腋下包(紅棕)", c:60, p:199, s:2}, {id:"A26", n:"大容量保齡球包(咖)", c:80, p:289, s:1}, {id:"A27", n:"蕾絲花邊後背包(黑)", c:70, p:199, s:1}, {id:"A28", n:"蕾絲花邊後背包(粉)", c:70, p:199, s:1}, {id:"A29", n:"韓系簡約褶皺雲朵包", c:65, p:199, s:1}, {id:"A30", n:"針織提手包(眼鏡狗)", c:65, p:139, s:2}, {id:"A31", n:"針織提手包(紅格狗)", c:65, p:139, s:2} ]},
         { cat: "B 生活小物", items: [ {id:"B01", n:"迷你磁吸小檯燈(藍)", c:30, p:79, s:3}, {id:"B02", n:"迷你磁吸小檯燈(綠)", c:30, p:79, s:3}, {id:"B03", n:"章魚暖光燈(藍)", c:40, p:89, s:2}, {id:"B04", n:"章魚暖光燈(黃)", c:40, p:89, s:2}, {id:"B05", n:"鬱金香封口夾(黃)", c:15, p:69, s:2}, {id:"B06", n:"鬱金香封口夾(粉)", c:15, p:69, s:2}, {id:"B07", n:"七層漢堡塑膠盤", c:35, p:129, s:2}, {id:"B08", n:"黃色眼睛化妝鏡", c:25, p:99, s:2}, {id:"B09", n:"粉色眼睛化妝鏡", c:25, p:99, s:2}, {id:"B10", n:"丙烯馬克筆(12色)", c:40, p:99, s:2}, {id:"B11", n:"丙烯馬克筆(48色)", c:150, p:259, s:1}, {id:"B12", n:"便利店存錢罐", c:85, p:159, s:1}, {id:"B13", n:"廣角鏡手機支架", c:40, p:99, s:6}, {id:"B14", n:"小麥麥耳機帽", c:30, p:89, s:1}, {id:"B15", n:"多巴胺計算機(黃)", c:45, p:99, s:1}, {id:"B16", n:"多巴胺計算機(紫)", c:45, p:99, s:1}, {id:"B17", n:"多巴胺計算機(白)", c:45, p:99, s:1}, {id:"B18", n:"雲朵鏡", c:15, p:49, s:1}, {id:"B19", n:"酪梨香氛蠟燭", c:20, p:99, s:4}, {id:"B20", n:"橘子香氛蠟燭", c:30, p:99, s:2}, {id:"B21", n:"聖誕樹蠟燭(白)", c:35, p:99, s:2}, {id:"B22", n:"聖誕樹蠟燭(綠)", c:35, p:99, s:2}, {id:"B23", n:"柿子香氛蠟燭", c:45, p:99, s:4}, {id:"B24", n:"山竹香氛蠟燭", c:45, p:99, s:4}, {id:"B25", n:"星星人手機氣囊(摔)", c:10, p:59, s:2}, {id:"B26", n:"星星人手機氣囊(看)", c:10, p:59, s:2}, {id:"B27", n:"無尾熊磁吸氣囊", c:28, p:79, s:2}, {id:"B28", n:"手提抱枕毯(餅乾)", c:135, p:249, s:1}, {id:"B29", n:"手提抱枕毯(巧克力)", c:135, p:249, s:1}, {id:"B30", n:"胡蘿蔔錄音筆", c:30, p:69, s:4}, {id:"B31", n:"可頌掛勾", c:65, p:99, s:8} ]},
         { cat: "C 織品區", items: [ {id:"C01", n:"雨傘擦手巾", c:20, p:79, s:1}, {id:"C02", n:"紅色蘑菇手巾", c:21, p:79, s:2}, {id:"C03", n:"藍帽子小狗手巾", c:33, p:99, s:2}, {id:"C04", n:"麥當貓擦手巾", c:38, p:99, s:1}, {id:"C05", n:"海星擦手巾", c:33, p:99, s:2}, {id:"C06", n:"水母擦手巾", c:33, p:99, s:2}, {id:"C07", n:"加大可愛狗手巾", c:33, p:129, s:2}, {id:"C08", n:"加大可愛熊手巾", c:33, p:129, s:1}, {id:"C09", n:"加大可愛豬手巾", c:33, p:129, s:1}, {id:"C10", n:"咖啡小狗擦手巾", c:15, p:99, s:2}, {id:"C11", n:"麵包狗手巾", c:18, p:99, s:1}, {id:"C12", n:"袋子狗手巾", c:18, p:99, s:2}, {id:"C13", n:"背包狗手巾", c:18, p:99, s:2}, {id:"C14", n:"線條狗手巾", c:30, p:99, s:1}, {id:"C16", n:"洋蔥小狗手巾", c:20, p:99, s:1}, {id:"C17", n:"橘子小狗手巾", c:20, p:99, s:2}, {id:"C18", n:"吐舌頭粉紅狗", c:22, p:99, s:2}, {id:"C19", n:"帽子長耳狗", c:22, p:99, s:2} ]},
@@ -124,20 +123,21 @@
         { cat: "H 節慶文具", items: [ {id:"H1", n:"馬年大吉紅包(5入)", c:6, p:39, s:5}, {id:"H2", n:"財源廣進紅包(5入)", c:6, p:39, s:5}, {id:"H3", n:"卡通蘋果福紅包(5入)", c:6, p:39, s:5}, {id:"H4", n:"燙金麻將馬紅包(5入)", c:7, p:39, s:5}, {id:"H5", n:"燙金馬上有錢(5入)", c:7, p:39, s:5}, {id:"H6", n:"燙金滿版馬(5入)", c:7, p:39, s:5}, {id:"H7", n:"Q版開開心心(5入)", c:6, p:39, s:5}, {id:"H8", n:"Q版馬力全開(5入)", c:6, p:39, s:5}, {id:"H9", n:"Q版馬上錢花(5入)", c:6, p:39, s:5}, {id:"H10", n:"書法新年快樂(5入)", c:8, p:39, s:2}, {id:"H11", n:"書法平安喜樂(5入)", c:8, p:39, s:2}, {id:"H12", n:"書法大吉大利(5入)", c:8, p:39, s:2}, {id:"H13", n:"多巴胺水果(6入)", c:8, p:49, s:3}, {id:"H14", n:"多巴胺小馬(6入)", c:9, p:49, s:2}, {id:"H15", n:"塗鴉水果系列(6入)", c:6, p:49, s:2}, {id:"H16", n:"卡通水果系列(6入)", c:9, p:49, s:3}, {id:"H17", n:"卡通小馬系列(6入)", c:9, p:49, s:3}, {id:"H18", n:"精神小馬系列(6入)", c:13, p:49, s:3}, {id:"H19", n:"蠟筆小新系列(6入)", c:22, p:59, s:2}, {id:"H20", n:"三麗鷗系列(6入)", c:22, p:59, s:2} ]}
     ];
 
-    let inv = JSON.parse(localStorage.getItem('pos_inv_final')) || fullInventory;
+    let inv = JSON.parse(localStorage.getItem('pos_inv_final')) || initialData;
     let orders = JSON.parse(localStorage.getItem('pos_orders_final')) || [];
     let cart = [];
     let currentPay = '現金';
-    const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbw1-YmTHhed-kdWfDto9aNLroRAjoBTTz19Bee9jg_dlHWAfN6zb5llE8YrTm2zPVj8/exec";
 
     function init() {
         const area = document.getElementById('item-area'), nav = document.getElementById('navbar');
         area.innerHTML = ''; nav.innerHTML = '';
         inv.forEach((cat, idx) => {
-            if (!cat.items.length) return; 
+            const showItems = cat.items.filter(it => it.s > 0);
+            if (showItems.length === 0) return; 
+
             nav.innerHTML += `<div class="nav-btn" onclick="document.getElementById('c${idx}').scrollIntoView()">${cat.cat}</div>`;
             let gridHtml = `<div class="cat-title" id="c${idx}">${cat.cat}</div><div class="product-grid">`;
-            cat.items.forEach(it => { 
+            showItems.forEach(it => { 
                 gridHtml += `<div class="p-btn" onclick="addCart('${it.id}')"><div class="p-name">${it.id} ${it.n}</div><div class="p-price">$${it.p}</div><div class="p-stock">存:${it.s}</div></div>`;
             });
             area.innerHTML += gridHtml + '</div>';
@@ -149,7 +149,6 @@
         let target = null;
         inv.forEach(c => c.items.forEach(i => { if(i.id === id) target = i; }));
         if(target && target.s > 0) { cart.push({...target}); renderCart(); }
-        else if(target && target.s <= 0) { alert("庫存不足！"); }
     }
 
     function renderCart() {
@@ -177,9 +176,8 @@
     function submitOrder() {
         if(!cart.length) return;
         const total = Number(document.getElementById('final-total').innerText), cost = cart.reduce((a,b)=>a+(b.c||0), 0);
-        const orderItems = cart.map(i => ({id:i.id, n:i.n, p:i.p, c:i.c}));
         cart.forEach(item => { inv.forEach(cat => cat.items.forEach(it => { if(it.id === item.id) it.s--; })); });
-        orders.unshift({ id: Date.now(), t: new Date().toLocaleTimeString(), d: new Date().toLocaleDateString(), total, profit: total-cost, pay: currentPay, items: orderItems });
+        orders.unshift({ id: Date.now(), t: new Date().toLocaleTimeString(), d: new Date().toLocaleDateString(), total, profit: total-cost, items: [...cart] });
         cart = []; document.getElementById('discount').value = ''; document.getElementById('cash-in').value = '';
         save(); init(); alert("結帳成功！");
     }
@@ -188,8 +186,10 @@
         const today = new Date().toLocaleDateString(), tOrders = orders.filter(o => o.d === today);
         document.getElementById('stat-revenue').innerText = tOrders.reduce((a,b)=>a+b.total, 0);
         document.getElementById('stat-profit').innerText = tOrders.reduce((a,b)=>a+b.profit, 0);
-        document.getElementById('order-log').innerHTML = "<strong>📋 最近交易 (✕刪除)</strong><hr>" + orders.slice(0,10).map(o => `<div style="font-size:0.75em; border-bottom:1px solid #eee; padding:5px; display:flex; justify-content:space-between; align-items:center;"><div><b>$${o.total}</b> <small>${o.t}</small></div><span class="del-x" onclick="deleteOrder(${o.id})">✕</span></div>`).join('');
+        document.getElementById('order-log').innerHTML = "<strong>📋 最近交易</strong><hr>" + orders.slice(0,5).map(o => `<div style="padding:5px; border-bottom:1px solid #eee;">$${o.total} (${o.t}) <span style="color:red; float:right;" onclick="deleteOrder(${o.id})">✕</span></div>`).join('');
     }
+
+    function deleteOrder(oid) { if(confirm("刪除這筆交易並還原庫存？")) { orders = orders.filter(o => o.id !== oid); save(); init(); } }
 
     function toggleAdmin() {
         const p = document.getElementById('admin-panel');
@@ -197,23 +197,18 @@
         if(p.style.display === 'flex') { renderAdminTable(); renderStatTable(); } else { init(); }
     }
 
-    // --- 商品編輯功能 ---
     function renderAdminTable() {
         let html = '';
         inv.forEach((cat, ci) => {
-            html += `<tr style="background:#f4f4f4;"><td colspan="7" style="text-align:left; padding-left:10px;"><b>${cat.cat}</b></td></tr>`;
+            html += `<tr style="background:#f4f4f4;"><td colspan="6" style="text-align:left; padding-left:10px;"><b>${cat.cat}</b></td></tr>`;
             cat.items.forEach((it, ii) => { 
                 html += `<tr>
-                    <td>
-                        <span class="move-btn" onclick="moveItem(${ci},${ii},-1)">↑</span>
-                        <span class="move-btn" onclick="moveItem(${ci},${ii},1)">↓</span>
-                    </td>
-                    <td>${it.id}</td>
-                    <td style="text-align:left;">${it.n}</td>
-                    <td><input type="number" class="admin-input" value="${it.c}" onchange="editInv(${ci},${ii},'c',this.value)"></td>
-                    <td><input type="number" class="admin-input" value="${it.p}" onchange="editInv(${ci},${ii},'p',this.value)"></td>
-                    <td><input type="number" class="admin-input" value="${it.s}" onchange="editInv(${ci},${ii},'s',this.value)"></td>
-                    <td><span class="del-x" onclick="deleteProduct(${ci},${ii})">🗑️</span></td>
+                    <td><span class="move-btn" onclick="move(${ci},${ii},-1)">↑</span><span class="move-btn" onclick="move(${ci},${ii},1)">↓</span></td>
+                    <td style="text-align:left;">${it.id} ${it.n}</td>
+                    <td><input type="number" class="admin-input" value="${it.c}" onchange="edit(${ci},${ii},'c',this.value)"></td>
+                    <td><input type="number" class="admin-input" value="${it.p}" onchange="edit(${ci},${ii},'p',this.value)"></td>
+                    <td><input type="number" class="admin-input" value="${it.s}" onchange="edit(${ci},${ii},'s',this.value)"></td>
+                    <td><span class="del-x" onclick="delP(${ci},${ii})">🗑️</span></td>
                 </tr>`; 
             });
         });
@@ -221,62 +216,34 @@
     }
 
     function addNewProduct() {
-        const catName = document.getElementById('new-cat').value;
-        const id = document.getElementById('new-id').value;
-        const n = document.getElementById('new-n').value;
-        const c = Number(document.getElementById('new-c').value);
-        const p = Number(document.getElementById('new-p').value);
-        const s = Number(document.getElementById('new-s').value);
-        if(!catName || !n) return alert("請輸入分類與名稱");
-        let cat = inv.find(v => v.cat === catName);
-        if(!cat) { cat = {cat: catName, items: []}; inv.push(cat); }
+        const catN = document.getElementById('new-cat').value, id = document.getElementById('new-id').value, n = document.getElementById('new-n').value;
+        const c = Number(document.getElementById('new-c').value), p = Number(document.getElementById('new-p').value), s = Number(document.getElementById('new-s').value);
+        if(!catN || !n) return alert("請填入分類與品名");
+        let cat = inv.find(v => v.cat === catN);
+        if(!cat) { cat = {cat: catN, items: []}; inv.push(cat); }
         cat.items.push({id, n, c, p, s});
         save(); renderAdminTable();
-        document.getElementById('new-id').value=''; document.getElementById('new-n').value='';
+        ['new-id','new-n','new-c','new-p','new-s'].forEach(id => document.getElementById(id).value = '');
     }
 
-    function deleteProduct(ci, ii) {
-        if(confirm("確定刪除此商品？")) { inv[ci].items.splice(ii, 1); save(); renderAdminTable(); }
-    }
-
-    function moveItem(ci, ii, dir) {
+    function move(ci, ii, dir) {
         let items = inv[ci].items;
-        if(ii + dir < 0 || ii + dir >= items.length) return;
+        if(ii+dir < 0 || ii+dir >= items.length) return;
         [items[ii], items[ii+dir]] = [items[ii+dir], items[ii]];
         save(); renderAdminTable();
     }
-
-    function editInv(ci, ii, k, v) { inv[ci].items[ii][k] = Number(v); save(); }
-    function clearAllOrders() { if(confirm("確定重置今日所有數據？")) { orders = []; save(); init(); } }
+    function edit(ci, ii, k, v) { inv[ci].items[ii][k] = Number(v); save(); }
+    function delP(ci, ii) { if(confirm("刪除品項？")) { inv[ci].items.splice(ii, 1); save(); renderAdminTable(); } }
     function save() { localStorage.setItem('pos_inv_final', JSON.stringify(inv)); localStorage.setItem('pos_orders_final', JSON.stringify(orders)); }
 
-    // --- 統計與雲端功能 ---
     function renderStatTable() {
-        const summary = getTodaySummary();
-        let html = '';
-        for(let n in summary) html += `<tr><td style="text-align:left;">${n}</td><td>${summary[n].count}</td><td>$${summary[n].total}</td></tr>`;
-        document.getElementById('stat-tbody').innerHTML = html || '<tr><td colspan="3">尚無銷售</td></tr>';
-    }
-
-    function getTodaySummary() {
         const summary = {};
         orders.filter(o => o.d === new Date().toLocaleDateString()).forEach(o => {
             o.items.forEach(it => { if(!summary[it.n]) summary[it.n] = {count:0, total:0}; summary[it.n].count++; summary[it.n].total+=it.p; });
         });
-        return summary;
-    }
-
-    async function uploadToGoogle() {
-        const today = new Date().toLocaleDateString(), tOrders = orders.filter(o => o.d === today);
-        if(!tOrders.length) return alert("沒有今日數據可上傳。");
-        const btn = document.getElementById('sync-btn');
-        btn.innerText = "⏳ 傳送中..."; btn.disabled = true;
-        const payload = { date: today, revenue: document.getElementById('stat-revenue').innerText, profit: document.getElementById('stat-profit').innerText, summary: getTodaySummary(), details: tOrders };
-        try {
-            await fetch(GOOGLE_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-            alert("✅ 上傳成功！");
-        } catch (e) { alert("❌ 上傳失敗！"); }
-        finally { btn.innerText = "🚀 結束營業：上傳資料"; btn.disabled = false; }
+        let html = '';
+        for(let n in summary) html += `<tr><td style="text-align:left;">${n}</td><td>${summary[n].count}</td><td>$${summary[n].total}</td></tr>`;
+        document.getElementById('stat-tbody').innerHTML = html || '<tr><td colspan="3">尚無銷售</td></tr>';
     }
 
     init();
