@@ -3,125 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🧸 角落雜貨舖 POS 完整版</title>
+    <title>🧸 角落雜貨舖 POS 終極版</title>
     <style>
         :root { --main-brown: #b0a496; --bg-cream: #fcf8f5; --accent-brown: #8c7b6c; --price-red: #d9534f; --profit-green: #6b8e23; }
-        body { font-family: sans-serif; background: var(--bg-cream); margin: 0; display: flex; flex-direction: column; height: 100vh; color: #5d5246; overflow: hidden; }
-        header { background: var(--main-brown); color: white; padding: 12px; text-align: center; font-size: 1.3em; font-weight: bold; flex-shrink: 0; }
-        .nav-bar { background: #e8e0d9; padding: 10px; display: flex; gap: 10px; overflow-x: auto; border-bottom: 2px solid #d1c7bc; flex-shrink: 0; }
-        .nav-btn { background: white; border: 1px solid #d1c7bc; padding: 6px 15px; border-radius: 20px; white-space: nowrap; cursor: pointer; font-size: 0.85em; }
+        * { box-sizing: border-box; }
+        body { font-family: sans-serif; background: var(--bg-cream); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; color: #5d5246; }
+        header { background: var(--main-brown); color: white; padding: 12px; text-align: center; font-weight: bold; flex-shrink: 0; }
+        .nav-bar { display: flex; overflow-x: auto; padding: 10px; gap: 8px; background: #e8e0d9; flex-shrink: 0; border-bottom: 2px solid #d1c7bc; }
+        .nav-btn { background: white; padding: 6px 15px; border-radius: 20px; white-space: nowrap; border: 1px solid #d1c7bc; cursor: pointer; font-size: 0.85em; }
         
-        /* 主佈局 */
         .main-content { display: flex; flex: 1; overflow: hidden; padding: 10px; gap: 10px; }
         
-        /* 左側商品區 */
-        .item-area { flex: 2; overflow-y: auto; background: white; border-radius: 15px; padding: 15px; border: 2px solid #e8e0d9; }
-        
-        /* 右側結帳區 - 這是重點 */
-        .checkout-area { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 310px; height: 100%; }
-        
-        .cat-title { background: #fdf5f0; padding: 6px 15px; border-radius: 20px; margin: 15px 0 8px; font-weight: bold; border-left: 6px solid var(--main-brown); font-size: 0.9em; }
-        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
-        .p-btn { background: white; border: 1px solid #f0e6dd; border-radius: 12px; padding: 8px 5px; text-align: center; cursor: pointer; box-shadow: 2px 2px 0 #e8e0d9; min-height: 75px; display: flex; flex-direction: column; justify-content: center; }
-        .p-name { font-size: 0.7em; font-weight: bold; margin-bottom: 3px; height: 2.4em; overflow: hidden; }
-        .p-price { color: #c2966d; font-size: 0.9em; font-weight: bold; }
-        .p-stock { font-size: 0.65em; color: #999; }
+        /* 左側商品 */
+        .item-area { flex: 1.3; overflow-y: auto; background: white; border-radius: 15px; padding: 15px; border: 2px solid #e8e0d9; }
+        .cat-title { font-weight: bold; margin: 15px 0 8px; color: var(--accent-brown); border-left: 5px solid var(--main-brown); padding-left: 8px; }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)); gap: 10px; }
+        .p-btn { background: white; border: 1px solid #f0e6dd; border-radius: 10px; padding: 10px 5px; text-align: center; cursor: pointer; box-shadow: 2px 2px 0 #e8e0d9; }
+        .p-name { font-size: 0.75em; font-weight: bold; height: 2.8em; overflow: hidden; margin-bottom: 5px; line-height: 1.4; }
+        .p-price { color: var(--accent-brown); font-weight: bold; font-size: 0.95em; }
 
-        /* 右側卡片容器 */
-        .card { background: white; border-radius: 15px; padding: 12px; border: 2px solid #e8e0d9; display: flex; flex-direction: column; }
+        /* 右側：大滑動容器 (這是你要求的大模組) */
+        .checkout-scroll-container { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 2px; }
         
-        /* 1. 當前清單：自動伸縮並滑動 */
-        .card-cart { flex: 1; min-height: 100px; overflow: hidden; }
-        #cart-list { flex: 1; overflow-y: auto; border-bottom: 2px dashed #e8e0d9; padding-bottom: 5px; }
+        .card { background: white; border-radius: 15px; border: 2px solid #e8e0d9; padding: 15px; flex-shrink: 0; }
         
-        /* 2. 結帳操作：固定在中間 */
-        .card-pay { flex-shrink: 0; }
+        /* 1. 當前清單 (小捲軸) */
+        .cart-card { height: 320px; display: flex; flex-direction: column; }
+        #cart-list { flex: 1; overflow-y: auto; }
+        .cart-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f9f9f9; font-size: 0.9em; }
 
-        /* 3. 最近交易紀錄：固定高度 */
-        #order-log { height: 110px; overflow-y: auto; flex-shrink: 0; font-size: 0.75em; }
+        /* 2. 結帳區 (大塊模組) */
+        .pay-module { background: #fffdfa; border: 2px solid var(--main-brown); }
+        .big-input { font-size: 1.3em; padding: 10px; width: 100%; border-radius: 8px; border: 2px solid #d1c7bc; text-align: right; box-sizing: border-box; margin-top: 5px; }
+        .total-display { font-size: 2.8em; font-weight: bold; color: var(--price-red); text-align: right; margin: 5px 0; }
+        .submit-btn { width: 100%; padding: 18px; background: var(--profit-green); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1.4em; cursor: pointer; }
 
-        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 0.85em; border-bottom: 1px solid #eee; }
-        .big-input { font-size: 1.4em; padding: 8px; width: 100%; border-radius: 10px; border: 2px solid #d1c7bc; text-align: right; box-sizing: border-box; background: #fffcf5; font-weight: bold; margin-top: 5px;}
-        .total-display { font-size: 2.4em; font-weight: bold; color: var(--price-red); text-align: right; margin: 2px 0; }
-        .pay-btn { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #ccc; background: white; cursor: pointer; font-weight: bold; font-size: 1.1em;}
-        .pay-btn.active { background: var(--accent-brown); color: white; border-color: var(--accent-brown); }
+        /* 3. 歷史紀錄 (小捲軸) */
+        .history-card { height: 250px; display: flex; flex-direction: column; }
+        #order-log { flex: 1; overflow-y: auto; font-size: 0.85em; }
 
         /* 後台 */
-        #admin-panel { position: fixed; inset: 10px; background: white; z-index: 1000; border-radius: 20px; display: none; flex-direction: column; padding: 15px; border: 3px solid var(--main-brown); box-shadow: 0 0 50px rgba(0,0,0,0.3); }
-        .admin-layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 15px; flex: 1; overflow: hidden; }
-        .admin-controls { display: flex; gap: 10px; flex-wrap: wrap; background: #fdfaf0; padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eee; }
-        .admin-table-container { overflow: auto; border: 1px solid #eee; }
-        .stat-container { background: #f9f9f9; border-radius: 10px; padding: 10px; overflow-y: auto; border: 1px solid #ddd; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.8em; }
-        th { background: #f4f4f4; position: sticky; top: 0; padding: 8px; border: 1px solid #ddd; z-index: 5; }
-        td { padding: 5px; border: 1px solid #ddd; text-align: center; }
-        .admin-input { width: 45px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
-        .del-x { color: red; font-weight: bold; cursor: pointer; padding: 0 8px; }
+        #admin-panel { position: fixed; inset: 10px; background: white; z-index: 1000; border-radius: 20px; display: none; flex-direction: column; padding: 15px; border: 3px solid var(--main-brown); overflow: hidden; }
     </style>
 </head>
 <body>
 
-<header>🧸 角落雜貨舖 POS</header>
+<header>🧸 角落雜貨舖 POS 終極整合</header>
 <div class="nav-bar" id="navbar"></div>
 
 <div class="main-content">
     <div class="item-area" id="item-area"></div>
     
-    <div class="checkout-area">
-        <div class="card card-cart">
+    <div class="checkout-scroll-container">
+        <div class="card cart-card">
             <strong>🛒 當前清單</strong>
             <div id="cart-list"></div>
         </div>
 
-        <div class="card card-pay">
-            <input type="number" id="discount" class="big-input" placeholder="折扣額" oninput="calc()">
-            <div class="total-display">$<span id="final-total">0</span></div>
-            <div style="display:flex; gap:8px; margin-bottom:5px;">
-                <button class="pay-btn active" id="btn-cash" onclick="setPay('現金')">💵 現金</button>
-                <button class="pay-btn" id="btn-elec" onclick="setPay('電支')">📱 電支</button>
+        <div class="card pay-module">
+            <div style="display:flex; gap:10px;">
+                <input type="number" id="discount" class="big-input" placeholder="折扣" oninput="calc()">
+                <input type="number" id="cash-in" class="big-input" placeholder="收錢" oninput="calcChange()">
             </div>
-            <input type="number" id="cash-in" class="big-input" placeholder="收錢" oninput="calcChange()"> 
-            <div style="text-align:right; margin-top:5px;">找零: <span id="cash-change" style="font-weight:bold; color:red; font-size:1.4em;">0</span></div>
-            <button onclick="submitOrder()" style="width:100%; padding:15px; margin-top:10px; background:var(--profit-green); color:white; border:none; border-radius:12px; font-weight:bold; font-size:1.3em;">結帳完成</button>
+            <div class="total-display">$<span id="final-total">0</span></div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span>找零: <b id="cash-change" style="color:red; font-size:1.4em;">0</b></span>
+                <div style="display:flex; gap:5px;">
+                    <button id="btn-cash" onclick="setPay('現金')" style="padding:8px; background:var(--accent-brown); color:white; border:none; border-radius:5px;">現金</button>
+                    <button id="btn-elec" onclick="setPay('電支')" style="padding:8px; background:#ddd; border:none; border-radius:5px;">電支</button>
+                </div>
+            </div>
+            <button class="submit-btn" onclick="submitOrder()">結帳完成</button>
         </div>
 
-        <div class="card" id="order-log"></div>
+        <div class="card history-card">
+            <strong>📋 最近歷史紀錄</strong>
+            <div id="order-log"></div>
+        </div>
     </div>
 </div>
 
-<div style="padding:10px; text-align:center; flex-shrink: 0;">
-    <button onclick="toggleAdmin()" style="padding:10px 20px; border-radius:10px; cursor:pointer; background:white; border:2px solid var(--main-brown); font-weight:bold;">🛠️ 後台管理</button>
+<div style="padding:10px; text-align:center;">
+    <button onclick="toggleAdmin()" style="padding:10px 20px; border-radius:10px; cursor:pointer;">🛠️ 後台管理</button>
 </div>
 
 <div id="admin-panel">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3>⚙️ 今日結帳統計</h3>
-        <button onclick="toggleAdmin()" style="padding:5px 15px;">✕ 關閉</button>
+    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+        <h3>後台管理</h3>
+        <button onclick="toggleAdmin()">✕ 關閉</button>
     </div>
-    <div class="admin-controls">
-        <button class="cloud-btn" id="sync-btn" onclick="uploadToGoogle()" style="background:#4285f4; color:white; border:none; padding:10px; border-radius:8px;">🚀 上傳至 Google</button>
-        <span style="margin-left:15px; color:red; font-weight:bold;">營收: $<span id="stat-revenue">0</span></span>
-        <span style="margin-left:15px; color:green; font-weight:bold;">利潤: $<span id="stat-profit">0</span></span>
-    </div>
-    <div class="admin-layout">
-        <div class="admin-table-container">
-            <table>
-                <thead><tr><th>編號</th><th>品名</th><th>成本</th><th>售價</th><th>庫存</th></tr></thead>
-                <tbody id="admin-tbody"></tbody>
-            </table>
-        </div>
-        <div class="stat-container">
-            <h4 style="margin-top:0;">📊 今日銷售品項</h4>
-            <table style="background:white;">
-                <thead><tr style="background:#eee;"><th>品名</th><th>數量</th><th>金額</th></tr></thead>
-                <tbody id="stat-tbody"></tbody>
-            </table>
-        </div>
+    <div id="admin-content" style="flex:1; overflow:auto;">
+        <button onclick="uploadToGoogle()" id="sync-btn" style="background:#4285f4; color:white; padding:10px; border:none; border-radius:5px; margin-bottom:10px;">同步至 Google</button>
+        <table border="1" style="width:100%; border-collapse:collapse;">
+            <thead><tr><th>ID</th><th>品名</th><th>售價</th><th>庫存</th></tr></thead>
+            <tbody id="admin-tbody"></tbody>
+        </table>
     </div>
 </div>
 
 <script>
-    // 這裡放入你原本的完整商品資料庫
     const fullInventory = [
         { cat: "A 包包區", items: [ {id:"A01", n:"針織托特包(黃鬱金香)", c:15, p:79, s:2}, {id:"A02", n:"針織托特包(米色小白狗)", c:15, p:79, s:2}, {id:"A03", n:"波點小狗化妝包", c:30, p:99, s:2}, {id:"A04", n:"ins蝴蝶結皺肩包(銀)", c:85, p:199, s:1}, {id:"A05", n:"Ins蝴蝶結皺肩包(藍)", c:85, p:199, s:1}, {id:"A06", n:"復古手提保齡球包(咖)", c:100, p:249, s:1}, {id:"A07", n:"豹紋手提小廢包(咖)", c:80, p:149, s:1}, {id:"A08", n:"素面斜跨皺肩包", c:90, p:199, s:1}, {id:"A09", n:"素面斜肩包(白)", c:90, p:199, s:1}, {id:"A10", n:"法式月牙腋下包(黑)", c:85, p:199, s:1}, {id:"A11", n:"法式月牙腋下包(白)", c:85, p:199, s:2}, {id:"A12", n:"雲朵迷你手提包(白)", c:70, p:139, s:2}, {id:"A13", n:"雲朵迷你手提包(黑)", c:70, p:139, s:2}, {id:"A14", n:"復古亮皮手提斜跨包(黑)", c:140, p:249, s:1}, {id:"A15", n:"小狗折疊化妝包", c:55, p:100, s:8}, {id:"A16", n:"卡其豹紋小方包", c:55, p:139, s:1}, {id:"A17", n:"編織月牙腋下包(粉紅)", c:95, p:199, s:1}, {id:"A18", n:"法式跳色月牙腋下包(米白)", c:70, p:199, s:2}, {id:"A19", n:"Y2K鍊條雙肩包", c:90, p:199, s:1}, {id:"A20", n:"JK風日系郵差包(咖)", c:120, p:289, s:1}, {id:"A21", n:"漆皮法棍腋下包(黑)", c:90, p:199, s:2}, {id:"A22", n:"珍珠雙鍊條腋下包(粉)", c:65, p:249, s:1}, {id:"A23", n:"珍珠雙鏈條腋下包(白)", c:65, p:249, s:1}, {id:"A24", n:"法國小眾方形腋下包(黑)", c:60, p:199, s:2}, {id:"A25", n:"法國小眾方形腋下包(紅棕)", c:60, p:199, s:2}, {id:"A26", n:"大容量保齡球包(咖)", c:80, p:289, s:1}, {id:"A27", n:"蕾絲花邊後背包(黑)", c:70, p:199, s:1}, {id:"A28", n:"蕾絲花邊後背包(粉)", c:70, p:199, s:1}, {id:"A29", n:"韓系簡約褶皺雲朵包", c:65, p:199, s:1}, {id:"A30", n:"針織提手包(眼鏡狗)", c:65, p:139, s:2}, {id:"A31", n:"針織提手包(紅格狗)", c:65, p:139, s:2} ]},
         { cat: "B 生活小物", items: [ {id:"B01", n:"迷你磁吸小檯燈(藍)", c:30, p:79, s:3}, {id:"B02", n:"迷你磁吸小檯燈(綠)", c:30, p:79, s:3}, {id:"B03", n:"章魚暖光燈(藍)", c:40, p:89, s:2}, {id:"B04", n:"章魚暖光燈(黃)", c:40, p:89, s:2}, {id:"B05", n:"鬱金香封口夾(黃)", c:15, p:69, s:2}, {id:"B06", n:"鬱金香封口夾(粉)", c:15, p:69, s:2}, {id:"B07", n:"七層漢堡塑膠盤", c:35, p:129, s:2}, {id:"B08", n:"黃色眼睛化妝鏡", c:25, p:99, s:2}, {id:"B09", n:"粉色眼睛化妝鏡", c:25, p:99, s:2}, {id:"B10", n:"丙烯馬克筆(12色)", c:40, p:99, s:2}, {id:"B11", n:"丙烯馬克筆(48色)", c:150, p:259, s:1}, {id:"B12", n:"便利店存錢罐", c:85, p:159, s:1}, {id:"B13", n:"廣角鏡手機支架", c:40, p:99, s:6}, {id:"B14", n:"小麥麥耳機帽", c:30, p:89, s:1}, {id:"B15", n:"多巴胺計算機(黃)", c:45, p:99, s:1}, {id:"B16", n:"多巴胺計算機(紫)", c:45, p:99, s:1}, {id:"B17", n:"多巴胺計算機(白)", c:45, p:99, s:1}, {id:"B18", n:"雲朵鏡", c:15, p:49, s:1}, {id:"B19", n:"酪梨香氛蠟燭", c:20, p:99, s:4}, {id:"B20", n:"橘子香氛蠟燭", c:30, p:99, s:2}, {id:"B21", n:"聖誕樹蠟燭(白)", c:35, p:99, s:2}, {id:"B22", n:"聖誕樹蠟燭(綠)", c:35, p:99, s:2}, {id:"B23", n:"柿子香氛蠟燭", c:45, p:99, s:4}, {id:"B24", n:"山竹香氛蠟燭", c:45, p:99, s:4}, {id:"B25", n:"星星人手機氣囊(摔)", c:10, p:59, s:2}, {id:"B26", n:"星星人手機氣囊(看)", c:10, p:59, s:2}, {id:"B27", n:"無尾熊磁吸氣囊", c:28, p:79, s:2}, {id:"B28", n:"手提抱枕毯(餅乾)", c:135, p:249, s:1}, {id:"B29", n:"手提抱枕毯(巧克力)", c:135, p:249, s:1}, {id:"B30", n:"胡蘿蔔錄音筆", c:30, p:69, s:4}, {id:"B31", n:"可頌掛勾", c:65, p:99, s:8} ]},
@@ -137,38 +117,31 @@
     let orders = JSON.parse(localStorage.getItem('pos_orders_final')) || [];
     let cart = [];
     let currentPay = '現金';
-    const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbw1-YmTHhed-kdWfDto9aNLroRAjoBTTz19Bee9jg_dlHWAfN6zb5llE8YrTm2zPVj8/exec";
 
     function init() {
         const area = document.getElementById('item-area'), nav = document.getElementById('navbar');
         area.innerHTML = ''; nav.innerHTML = '';
         inv.forEach((cat, idx) => {
-            if (!cat.items.some(it => it.s > 0)) return;
-            nav.innerHTML += `<div class="nav-btn" onclick="document.getElementById('c${idx}').scrollIntoView()">${cat.cat}</div>`;
+            nav.innerHTML += `<div class="nav-btn" onclick="document.getElementById('c${idx}').scrollIntoView({behavior:'smooth'})">${cat.cat}</div>`;
             let gridHtml = `<div class="cat-title" id="c${idx}">${cat.cat}</div><div class="product-grid">`;
-            cat.items.forEach(it => { if(it.s > 0) {
-                gridHtml += `<div class="p-btn" onclick="addCart('${it.id}')"><div class="p-name">${it.id} ${it.n}</div><div class="p-price">$${it.p}</div><div class="p-stock">存:${it.s}</div></div>`;
-            }});
+            cat.items.forEach(it => {
+                gridHtml += `<div class="p-btn" onclick="addCart('${it.id}')"><div class="p-name">${it.n}</div><div class="p-price">$${it.p}</div><div style="font-size:0.6em;color:#999;">存:${it.s}</div></div>`;
+            });
             area.innerHTML += gridHtml + '</div>';
         });
         updateLog();
-        renderCart(); // 確保啟動時清單正確
+        renderCart();
     }
 
     function addCart(id) {
-        let target = null;
-        inv.forEach(c => c.items.forEach(i => { if(i.id === id) target = i; }));
-        if(target && target.s > 0) { cart.push({...target}); renderCart(); }
+        let t = null;
+        inv.forEach(c => c.items.forEach(i => { if(i.id===id) t=i; }));
+        if(t && t.s > 0) { cart.push({...t}); renderCart(); document.getElementById('cart-list').scrollTop = 9999; }
     }
 
     function renderCart() {
-        const list = document.getElementById('cart-list');
-        if(!list) return;
-        list.innerHTML = cart.map((it, i) => `
-            <div class="cart-item">
-                <span>${it.id} ${it.n}</span>
-                <span><b>$${it.p}</b> <span onclick="cart.splice(${i},1);renderCart()" style="color:red; margin-left:10px; cursor:pointer; font-weight:bold;">✕</span></span>
-            </div>
+        document.getElementById('cart-list').innerHTML = cart.map((it, i) => `
+            <div class="cart-item"><span>${it.n}</span><span>$${it.p} <b onclick="cart.splice(${i},1);renderCart()" style="color:red;cursor:pointer;">✕</b></span></div>
         `).join('');
         calc();
     }
@@ -186,85 +159,44 @@
 
     function setPay(m) {
         currentPay = m;
-        document.getElementById('btn-cash').className = m==='現金'?'pay-btn active':'pay-btn';
-        document.getElementById('btn-elec').className = m==='電支'?'pay-btn active':'pay-btn';
+        document.getElementById('btn-cash').style.background = m==='現金'?'var(--accent-brown)':'#ddd';
+        document.getElementById('btn-elec').style.background = m==='電支'?'var(--accent-brown)':'#ddd';
     }
 
     function submitOrder() {
         if(!cart.length) return;
-        const total = Number(document.getElementById('final-total').innerText), cost = cart.reduce((a,b)=>a+(b.c||0), 0);
-        const orderItems = cart.map(i => ({id:i.id, n:i.n, p:i.p, c:i.c}));
-        
-        cart.forEach(item => { inv.forEach(cat => cat.items.forEach(it => { if(it.id === item.id) it.s--; })); });
-        
-        orders.unshift({ id: Date.now(), t: new Date().toLocaleTimeString(), d: new Date().toLocaleDateString(), total, profit: total-cost, pay: currentPay, items: orderItems });
-        
-        cart = []; 
-        document.getElementById('discount').value = ''; 
-        document.getElementById('cash-in').value = '';
-        save(); init(); alert("結帳完成！");
-    }
-
-    function deleteOrder(id) {
-        if(!confirm("確定刪除此交易？")) return;
-        const idx = orders.findIndex(o => o.id === id);
-        if(idx !== -1) {
-            if(confirm("要歸還庫存嗎？")) orders[idx].items.forEach(si => { inv.forEach(cat => cat.items.forEach(it => { if(it.id === si.id) it.s++; })); });
-            orders.splice(idx, 1); save(); init();
-        }
+        const total = Number(document.getElementById('final-total').innerText);
+        cart.forEach(ci => { inv.forEach(cat => cat.items.forEach(it => { if(it.id === ci.id) it.s--; })); });
+        orders.unshift({ id: Date.now(), t: new Date().toLocaleTimeString(), total, pay: currentPay });
+        localStorage.setItem('pos_inv_final', JSON.stringify(inv));
+        localStorage.setItem('pos_orders_final', JSON.stringify(orders));
+        cart = []; document.getElementById('discount').value=''; document.getElementById('cash-in').value='';
+        renderCart(); updateLog(); init(); alert("結帳成功！");
     }
 
     function updateLog() {
-        const today = new Date().toLocaleDateString(), tOrders = orders.filter(o => o.d === today);
-        document.getElementById('stat-revenue').innerText = tOrders.reduce((a,b)=>a+b.total, 0);
-        document.getElementById('stat-profit').innerText = tOrders.reduce((a,b)=>a+b.profit, 0);
-        document.getElementById('order-log').innerHTML = "<strong>📋 最近交易</strong><hr>" + orders.slice(0,5).map(o => `<div style="padding:4px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between;"><span>$${o.total} (${o.pay}) <small>${o.t}</small></span><span class="del-x" onclick="deleteOrder(${o.id})">✕</span></div>`).join('');
+        document.getElementById('order-log').innerHTML = orders.slice(0,10).map(o => `
+            <div style="padding:5px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">
+                <span>${o.t} <b>$${o.total}</b></span>
+                <button onclick="deleteOrder(${o.id})" style="color:red;border:none;background:none;">刪</button>
+            </div>
+        `).join('');
+    }
+
+    function deleteOrder(id) {
+        if(confirm("刪除紀錄？")) { orders = orders.filter(o => o.id !== id); localStorage.setItem('pos_orders_final', JSON.stringify(orders)); updateLog(); }
     }
 
     function toggleAdmin() {
         const p = document.getElementById('admin-panel');
-        p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
-        if(p.style.display === 'flex') { renderAdminTable(); renderStatTable(); }
+        p.style.display = p.style.display==='flex'?'none':'flex';
+        if(p.style.display==='flex') {
+            let h = '';
+            inv.forEach(c => c.items.forEach(it => { h += `<tr><td>${it.id}</td><td>${it.n}</td><td>${it.p}</td><td>${it.s}</td></tr>`; }));
+            document.getElementById('admin-tbody').innerHTML = h;
+        }
     }
 
-    function renderStatTable() {
-        const summary = {};
-        orders.filter(o => o.d === new Date().toLocaleDateString()).forEach(o => {
-            o.items.forEach(it => { if(!summary[it.n]) summary[it.n] = {count:0, total:0}; summary[it.n].count++; summary[it.n].total+=it.p; });
-        });
-        let html = '';
-        for(let n in summary) html += `<tr><td style="text-align:left;">${n}</td><td>${summary[n].count}</td><td>$${summary[n].total}</td></tr>`;
-        document.getElementById('stat-tbody').innerHTML = html || '<tr><td colspan="3">尚無銷售</td></tr>';
-    }
-
-    function renderAdminTable() {
-        let html = '';
-        inv.forEach((cat, ci) => {
-            html += `<tr style="background:#eee;"><td colspan="5" style="text-align:left;"><b>${cat.cat}</b></td></tr>`;
-            cat.items.forEach((it, ii) => { html += `<tr><td>${it.id}</td><td style="text-align:left;">${it.n}</td><td><input type="number" class="admin-input" value="${it.c}" onchange="editInv(${ci},${ii},'c',this.value)"></td><td><input type="number" class="admin-input" value="${it.p}" onchange="editInv(${ci},${ii},'p',this.value)"></td><td><input type="number" class="admin-input" value="${it.s}" onchange="editInv(${ci},${ii},'s',this.value)"></td></tr>`; });
-        });
-        document.getElementById('admin-tbody').innerHTML = html;
-    }
-
-    function editInv(ci, ii, k, v) { inv[ci].items[ii][k] = Number(v); save(); }
-    function save() { localStorage.setItem('pos_inv_final', JSON.stringify(inv)); localStorage.setItem('pos_orders_final', JSON.stringify(orders)); }
-
-    async function uploadToGoogle() {
-        const today = new Date().toLocaleDateString(), tOrders = orders.filter(o => o.d === today);
-        if(!tOrders.length) return alert("無數據。");
-        const btn = document.getElementById('sync-btn');
-        btn.innerText = "⏳ 傳送中..."; btn.disabled = true;
-        
-        const summary = {};
-        tOrders.forEach(o => o.items.forEach(it => { if(!summary[it.n]) summary[it.n] = {count:0, total:0}; summary[it.n].count++; summary[it.n].total+=it.p; }));
-
-        const payload = { date: today, revenue: document.getElementById('stat-revenue').innerText, profit: document.getElementById('stat-profit').innerText, summary: summary, details: tOrders };
-        try {
-            await fetch(GOOGLE_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-            alert("✅ 上傳成功！");
-        } catch (e) { alert("❌ 失敗"); }
-        finally { btn.innerText = "🚀 上傳至 Google"; btn.disabled = false; }
-    }
     init();
 </script>
 </body>
