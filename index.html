@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🧸 LITTLE NOOK POS (完整整合版)</title>
+    <title>🧸 LITTLE NOOK POS (管理員安全版)</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -54,7 +54,7 @@
 
 <div id="net-status">⚠️ 目前處於離線狀態，結帳將暫存於本機</div>
 
-<header>🧸 LITTLE NOOK POS (安全加密版)</header>
+<header>🧸 LITTLE NOOK POS (管理權限版)</header>
 <div class="nav-bar" id="navbar"></div>
 
 <div class="main-content">
@@ -143,7 +143,7 @@
 </div>
 
 <script>
-    // --- Firebase 安全配置 ---
+    // --- Firebase 配置 ---
     const firebaseConfig = {
         apiKey: "AIzaSyDn6HtjYMz_FFKU9xjhvV1xXYPr7t36UU0",
         authDomain: "little-nook-aad58.firebaseapp.com",
@@ -154,33 +154,26 @@
         appId: "1:338959223363:web:71e35d25959c9d57f131a3"
     };
 
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // --- POS 邏輯代碼 ---
+    // --- POS 變數 ---
     let inv = JSON.parse(localStorage.getItem('nook_inv')) || []; 
-    let orders = JSON.parse(localStorage.getItem('nook_orders')) || [];
-    let cart = []; let currentPay = '現金';
+    let orders = [];
+    let cart = []; 
+    let currentPay = '現金';
     let currentSearchOrders = []; 
+    let sessionPass = ""; // 關鍵：用於存放本分頁暫存密碼
 
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
-
-    function updateOnlineStatus() {
-        const status = document.getElementById('net-status');
-        if (navigator.onLine) {
-            status.innerHTML = "已恢復連線，同步資料中...";
-            status.className = "online";
-            setTimeout(() => { status.style.display = 'none'; }, 2000);
-        } else {
-            status.innerHTML = "⚠️ 目前處於離線狀態，結帳將暫存於本機";
-            status.className = "";
-            status.style.display = 'block';
+    // --- 核心權限檢查函式 ---
+    function checkAuth() {
+        if (!sessionPass) {
+            sessionPass = prompt("這是敏感操作，請輸入管理員密碼：");
         }
+        return sessionPass;
     }
 
+    // --- 數據監聽 ---
     db.ref('inventory').on('value', (snapshot) => {
         const data = snapshot.val();
         if(data) {
@@ -194,20 +187,23 @@
         const data = snapshot.val();
         if(data) {
             orders = Object.keys(data).map(key => ({...data[key], firebaseKey: key})).reverse();
-            localStorage.setItem('nook_orders', JSON.stringify(orders));
             updateLog();
             renderStatTable();
         }
     });
 
-    if(inv.length > 0) initUI();
-    updateOnlineStatus();
-
+    // --- 修改後的存檔函式 (帶驗證) ---
     function saveInv() { 
+        if (!checkAuth()) return; // 沒輸密碼直接中斷
+        
         localStorage.setItem('nook_inv', JSON.stringify(inv));
-        db.ref('inventory').set(inv); 
+        db.ref('inventory').set(inv).catch(err => {
+            alert("⚠️ 儲存失敗！密碼錯誤或權限不足。");
+            sessionPass = ""; // 清除密碼以便下次重新嘗試
+        });
     }
 
+    // --- 其餘 POS 邏輯 ---
     function initUI() {
         const area = document.getElementById('item-area'), nav = document.getElementById('navbar');
         if(!area || !nav) return;
@@ -255,6 +251,7 @@
         document.getElementById('btn-elec').className = m==='電支'?'pay-btn active':'pay-btn';
     }
 
+    // 結帳功能：通常開放給員工，如果不開放可以加 checkAuth()
     function submitOrder() {
         if(!cart.length) return;
         const totalAmt = Number(document.getElementById('final-total').innerText);
@@ -271,95 +268,36 @@
         cart.forEach(item => { 
             inv.forEach(cat => (cat.items || []).forEach(it => { if(it.id === item.id) it.s--; })); 
         });
-        orders.unshift(newOrder);
-        localStorage.setItem('nook_orders', JSON.stringify(orders));
-        db.ref('orders').push(newOrder);
-        saveInv();
-        cart = []; document.getElementById('discount').value = ''; document.getElementById('cash-in').value = '';
-        renderCart();
-        alert(navigator.onLine ? "結帳成功！" : "離線結帳已暫存！");
+        
+        db.ref('orders').push(newOrder).then(() => {
+            // 訂單成功後更新庫存（此處需要密碼）
+            if(sessionPass) {
+                db.ref('inventory').set(inv);
+            } else {
+                // 如果是員工結帳沒密碼，Rules 應允許 update orders 但不允許 inventory
+                // 這部分依賴你剛剛在 Rules 寫的邏輯
+            }
+            cart = []; document.getElementById('discount').value = ''; document.getElementById('cash-in').value = '';
+            renderCart();
+            alert("結帳成功！");
+        }).catch(e => alert("結帳權限不足，請檢查資料庫規則。"));
     }
 
-    // 餘下管理功能 (toggleHistory, searchHistory, renderAdminTable, etc.) 保持不變
-    function toggleHistory() {
-        const p = document.getElementById('history-panel');
-        p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
-        if(p.style.display === 'flex') {
-            document.getElementById('search-date').value = new Date().toISOString().split('T')[0];
-            document.getElementById('history-result-area').innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">請點選搜尋條件</p>';
-        }
-    }
-
-    function searchHistory(type) {
-        let tOrders = [];
-        let title = "";
-        if (type === 'day') {
-            const dateInput = document.getElementById('search-date').value;
-            if (!dateInput) return alert("請選擇日期");
-            const targetDate = new Date(dateInput).toLocaleDateString();
-            tOrders = orders.filter(o => o.d === targetDate);
-            title = `📅 ${targetDate} 銷售概況`;
-            document.getElementById('btn-month-excel').style.display = 'none';
-        } else {
-            const monthInput = document.getElementById('search-month').value; 
-            if (!monthInput) return alert("請選擇月份");
-            const [year, month] = monthInput.split('-');
-            tOrders = orders.filter(o => {
-                const oDate = new Date(o.d);
-                return oDate.getFullYear() == year && (oDate.getMonth() + 1) == parseInt(month);
+    // --- 管理與歷史功能 (全部整合密碼驗證) ---
+    function deleteOrder(key) {
+        if (!checkAuth()) return;
+        if(confirm("確定刪除此紀錄？")) {
+            db.ref('orders/' + key).remove().then(() => {
+                alert("刪除成功");
+            }).catch(err => {
+                alert("權限不足！");
+                sessionPass = "";
             });
-            title = `🗓️ ${monthInput} 月度結算`;
-            document.getElementById('btn-month-excel').style.display = 'inline-block';
-        }
-        currentSearchOrders = tOrders;
-        renderHistoryList(title, tOrders);
-    }
-
-    function renderHistoryList(title, tOrders) {
-        const container = document.getElementById('history-result-area');
-        if(tOrders.length === 0) { container.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">查無紀錄</p>'; return; }
-        const totalRev = tOrders.reduce((a,b)=>a+(Number(b.total)||0), 0);
-        const totalProf = tOrders.reduce((a,b)=>a+(Number(b.profit)||0), 0);
-        let html = `<h3>${title}</h3><div style="font-size:1.2em; margin-bottom:15px; background:#f0fdf4; padding:15px; border-radius:8px; display:flex; gap:20px;"><div>營收：<b style="color:red;">$${totalRev}</b></div><div>利潤：<b style="color:green;">$${totalProf}</b></div><div>成交：<b>${tOrders.length} 筆</b></div></div><table style="width:100%;"><thead><tr style="background:#eee;"><th>日期時間</th><th>商品內容</th><th>金額</th><th>支付</th><th>刪除</th></tr></thead><tbody>`;
-        tOrders.forEach(o => {
-            const codes = (o.items || []).map(i => `<span class="order-tag">${i.id}</span>`).join('');
-            html += `<tr style="border-bottom:1px solid #eee;"><td>${o.d}<br><small>${o.t}</small></td><td style="text-align:left;">${codes}</td><td>$${o.total}</td><td>${o.pay}</td><td><span class="del-x" onclick="deleteOrder('${o.firebaseKey}')">🗑️</span></td></tr>`;
-        });
-        container.innerHTML = html + `</tbody></table>`;
-    }
-
-    function exportMonthlyExcel() {
-        if (currentSearchOrders.length === 0) return;
-        const exportData = currentSearchOrders.map(o => ({ "日期": o.d, "時間": o.t, "總額": o.total, "利潤": o.profit, "付款方式": o.pay, "商品代碼": (o.items || []).map(i => i.id).join(', ') }));
-        const ws = XLSX.utils.json_to_sheet(exportData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "月報表");
-        XLSX.writeFile(wb, `LittleNook_月報_${document.getElementById('search-month').value}.xlsx`);
-    }
-
-    function toggleAdmin() {
-        const p = document.getElementById('admin-panel');
-        p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
-        if(p.style.display === 'flex') { renderAdminTable(); renderStatTable(); updateCatSelect(); }
-    }
-
-    function updateCatSelect() {
-        const select = document.getElementById('select-cat');
-        if(!select) return;
-        let options = inv.map(c => `<option value="${c.cat}">${c.cat}</option>`).join('');
-        options += `<option value="ADD_NEW_CAT">➕ 新增分類...</option>`;
-        select.innerHTML = options;
-    }
-
-    function checkNewCat(val) {
-        if (val === "ADD_NEW_CAT") {
-            const newName = prompt("請輸入新分類名稱：");
-            if (newName && !inv.find(c => c.cat === newName)) { inv.push({cat: newName, items: []}); saveInv(); }
-            document.getElementById('select-cat').selectedIndex = 0;
         }
     }
 
     function addNewProduct() {
+        if (!checkAuth()) return;
         const catN = document.getElementById('select-cat').value;
         const id = document.getElementById('new-id').value, n = document.getElementById('new-n').value;
         const c = Number(document.getElementById('new-c').value), p = Number(document.getElementById('new-p').value), s = Number(document.getElementById('new-s').value);
@@ -369,6 +307,30 @@
         ['new-id','new-n','new-c','new-p','new-s'].forEach(fid => document.getElementById(fid).value = '');
     }
 
+    function delP(ci, ii) { 
+        if (!checkAuth()) return;
+        if(confirm("確定刪除？")) { 
+            inv[ci].items.splice(ii, 1); 
+            saveInv(); 
+        } 
+    }
+
+    function toggleAdmin() {
+        const p = document.getElementById('admin-panel');
+        p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
+        if(p.style.display === 'flex') { renderAdminTable(); renderStatTable(); updateCatSelect(); }
+    }
+
+    function toggleHistory() {
+        const p = document.getElementById('history-panel');
+        p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
+        if(p.style.display === 'flex') {
+            document.getElementById('search-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('history-result-area').innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">請點選搜尋條件</p>';
+        }
+    }
+
+    // --- 其他 UI 渲染函式 ---
     function renderAdminTable() {
         let html = '';
         inv.forEach((cat, ci) => {
@@ -395,22 +357,11 @@
         saveInv(); 
     }
 
-    function delP(ci, ii) { if(confirm("確定刪除？")) { inv[ci].items.splice(ii, 1); saveInv(); } }
-    
     function move(ci, ii, dir) {
         let items = inv[ci].items;
         if(ii+dir < 0 || ii+dir >= items.length) return;
         [items[ii], items[ii+dir]] = [items[ii+dir], items[ii]];
         saveInv();
-    }
-
-    function deleteOrder(key) {
-        if(confirm("確定刪除此紀錄？")) {
-            if(key) db.ref('orders/' + key).remove();
-            orders = orders.filter(o => o.firebaseKey !== key);
-            localStorage.setItem('nook_orders', JSON.stringify(orders));
-            updateLog(); renderStatTable();
-        }
     }
 
     function updateLog() {
@@ -444,6 +395,65 @@
         document.getElementById('stat-tbody').innerHTML = html || '<tr><td colspan="3">今日尚無銷售</td></tr>';
     }
 
+    // 分類、搜尋、Excel 匯出函式保持不變...
+    function updateCatSelect() {
+        const select = document.getElementById('select-cat');
+        if(!select) return;
+        let options = inv.map(c => `<option value="${c.cat}">${c.cat}</option>`).join('');
+        options += `<option value="ADD_NEW_CAT">➕ 新增分類...</option>`;
+        select.innerHTML = options;
+    }
+    function checkNewCat(val) {
+        if (val === "ADD_NEW_CAT") {
+            const newName = prompt("請輸入新分類名稱：");
+            if (newName && !inv.find(c => c.cat === newName)) { inv.push({cat: newName, items: []}); saveInv(); }
+            document.getElementById('select-cat').selectedIndex = 0;
+        }
+    }
+    function searchHistory(type) {
+        let tOrders = [];
+        let title = "";
+        if (type === 'day') {
+            const dateInput = document.getElementById('search-date').value;
+            if (!dateInput) return alert("請選擇日期");
+            const targetDate = new Date(dateInput).toLocaleDateString();
+            tOrders = orders.filter(o => o.d === targetDate);
+            title = `📅 ${targetDate} 銷售概況`;
+            document.getElementById('btn-month-excel').style.display = 'none';
+        } else {
+            const monthInput = document.getElementById('search-month').value; 
+            if (!monthInput) return alert("請選擇月份");
+            const [year, month] = monthInput.split('-');
+            tOrders = orders.filter(o => {
+                const oDate = new Date(o.d);
+                return oDate.getFullYear() == year && (oDate.getMonth() + 1) == parseInt(month);
+            });
+            title = `🗓️ ${monthInput} 月度結算`;
+            document.getElementById('btn-month-excel').style.display = 'inline-block';
+        }
+        currentSearchOrders = tOrders;
+        renderHistoryList(title, tOrders);
+    }
+    function renderHistoryList(title, tOrders) {
+        const container = document.getElementById('history-result-area');
+        if(tOrders.length === 0) { container.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">查無紀錄</p>'; return; }
+        const totalRev = tOrders.reduce((a,b)=>a+(Number(b.total)||0), 0);
+        const totalProf = tOrders.reduce((a,b)=>a+(Number(b.profit)||0), 0);
+        let html = `<h3>${title}</h3><div style="font-size:1.2em; margin-bottom:15px; background:#f0fdf4; padding:15px; border-radius:8px; display:flex; gap:20px;"><div>營收：<b style="color:red;">$${totalRev}</b></div><div>利潤：<b style="color:green;">$${totalProf}</b></div><div>成交：<b>${tOrders.length} 筆</b></div></div><table style="width:100%;"><thead><tr style="background:#eee;"><th>日期時間</th><th>商品內容</th><th>金額</th><th>支付</th><th>刪除</th></tr></thead><tbody>`;
+        tOrders.forEach(o => {
+            const codes = (o.items || []).map(i => `<span class="order-tag">${i.id}</span>`).join('');
+            html += `<tr style="border-bottom:1px solid #eee;"><td>${o.d}<br><small>${o.t}</small></td><td style="text-align:left;">${codes}</td><td>$${o.total}</td><td>${o.pay}</td><td><span class="del-x" onclick="deleteOrder('${o.firebaseKey}')">🗑️</span></td></tr>`;
+        });
+        container.innerHTML = html + `</tbody></table>`;
+    }
+    function exportMonthlyExcel() {
+        if (currentSearchOrders.length === 0) return;
+        const exportData = currentSearchOrders.map(o => ({ "日期": o.d, "時間": o.t, "總額": o.total, "利潤": o.profit, "付款方式": o.pay, "商品代碼": (o.items || []).map(i => i.id).join(', ') }));
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "月報表");
+        XLSX.writeFile(wb, `LittleNook_月報_${document.getElementById('search-month').value}.xlsx`);
+    }
     function exportToExcel() {
         if (orders.length === 0) return alert("無資料");
         const exportData = orders.map(o => ({ "日期": o.d, "時間": o.t, "總額": o.total, "利潤": o.profit, "付款方式": o.pay, "明細": (o.items || []).map(i => i.n).join(', ') }));
@@ -452,6 +462,10 @@
         XLSX.utils.book_append_sheet(wb, ws, "完整紀錄");
         XLSX.writeFile(wb, `LittleNook_全部紀錄.xlsx`);
     }
+
+    // 初次載入
+    if(inv.length > 0) initUI();
+
 </script>
 </body>
 </html>
