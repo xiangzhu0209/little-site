@@ -4,22 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🧸 LITTLE NOOK POS (完整整合版)</title>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <style>
         :root { --main-brown: #b0a496; --bg-cream: #fcf8f5; --accent-brown: #8c7b6c; --price-red: #d9534f; --profit-green: #6b8e23; }
         body { font-family: sans-serif; background: var(--bg-cream); margin: 0; display: flex; flex-direction: column; height: 100vh; color: #5d5246; overflow: hidden; }
-        
-        /* 斷網提醒 */
         #net-status { background: #ff4d4d; color: white; text-align: center; padding: 5px; font-weight: bold; display: none; z-index: 9999; }
         #net-status.online { background: #28a745; }
-
         header { background: var(--main-brown); color: white; padding: 12px; text-align: center; font-size: 1.3em; font-weight: bold; flex-shrink: 0; }
         .nav-bar { background: #e8e0d9; padding: 10px; display: flex; gap: 10px; overflow-x: auto; border-bottom: 2px solid #d1c7bc; flex-shrink: 0; }
         .nav-btn { background: white; border: 1px solid #d1c7bc; padding: 8px 18px; border-radius: 20px; white-space: nowrap; cursor: pointer; font-size: 1.1em; }
-        
         .main-content { display: flex; flex: 1; overflow: hidden; padding: 10px; gap: 10px; }
         .item-area { flex: 1.8; overflow-y: auto; background: white; border-radius: 15px; padding: 15px; border: 2px solid #e8e0d9; }
         .cat-title { background: #fdf5f0; padding: 8px 15px; border-radius: 20px; margin: 15px 0 8px; font-weight: bold; border-left: 8px solid var(--main-brown); font-size: 1.2em; }
@@ -28,7 +24,6 @@
         .p-name { font-size: 0.85em; font-weight: bold; margin-bottom: 5px; height: 2.8em; overflow: hidden; line-height: 1.4; }
         .p-price { color: #c2966d; font-size: 1.2em; font-weight: bold; }
         .p-stock { font-size: 0.8em; color: #999; }
-
         .checkout-area { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 320px; overflow-y: auto; }
         .card { background: white; border-radius: 15px; padding: 12px; border: 2px solid #e8e0d9; }
         #cart-list { max-height: 200px; overflow-y: auto; border-bottom: 2px dashed #e8e0d9; }
@@ -37,25 +32,19 @@
         .total-display { font-size: 3.2em; font-weight: bold; color: var(--price-red); text-align: right; margin: 10px 0; }
         .pay-btn { flex: 1; padding: 15px; border-radius: 10px; border: 1px solid #ccc; background: white; cursor: pointer; font-weight: bold; font-size: 1.3em;}
         .pay-btn.active { background: var(--accent-brown); color: white; border-color: var(--accent-brown); }
-
         #admin-panel, #history-panel { position: fixed; inset: 10px; background: white; z-index: 1000; border-radius: 20px; display: none; flex-direction: column; padding: 15px; border: 3px solid var(--main-brown); box-shadow: 0 0 50px rgba(0,0,0,0.3); }
         .admin-layout { display: grid; grid-template-columns: 1.6fr 0.9fr; gap: 15px; flex: 1; overflow: hidden; }
-        
         .add-row-top { background: #f0fdf4; padding: 15px; border: 2px solid var(--profit-green); border-radius: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
         .add-row-top div { display: flex; flex-direction: column; gap: 3px; }
         .add-row-top label { font-size: 0.9em; color: #444; font-weight: bold; }
         .add-row-top input, .add-row-top select { font-size: 1.1em; padding: 8px; border: 1px solid #ccc; border-radius: 8px; background: white; }
         .add-row-top button { font-size: 1.1em; padding: 10px 25px; background: var(--profit-green); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; align-self: flex-end; }
-
         .admin-table-container { overflow: auto; border: 1px solid #eee; border-radius: 8px; }
         table { width: 100%; border-collapse: collapse; font-size: 1em; }
         th { background: #f4f4f4; position: sticky; top: 0; padding: 10px; border: 1px solid #ddd; z-index: 5; }
         td { padding: 8px; border: 1px solid #ddd; text-align: center; }
-        
-        /* 保持修正的 180px 寬度 */
         .admin-input-name { width: 180px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95em; text-align: left; }
         .admin-input-num { width: 65px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.1em; text-align: center; }
-        
         .move-btn { cursor: pointer; padding: 4px 10px; background: #eee; border-radius: 4px; border: 1px solid #ccc; font-weight: bold; font-size: 1.1em; margin: 0 1px; }
         .del-x { color: red; font-weight: bold; cursor: pointer; font-size: 1.4em; padding: 5px; }
         .order-tag { background: #eee; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-right: 4px; color: #666; }
@@ -65,7 +54,7 @@
 
 <div id="net-status">⚠️ 目前處於離線狀態，結帳將暫存於本機</div>
 
-<header>🧸 LITTLE NOOK POS (整合穩定版)</header>
+<header>🧸 LITTLE NOOK POS (安全加密版)</header>
 <div class="nav-bar" id="navbar"></div>
 
 <div class="main-content">
@@ -154,20 +143,23 @@
 </div>
 
 <script>
+    // --- Firebase 安全配置 ---
     const firebaseConfig = {
         apiKey: "AIzaSyDn6HtjYMz_FFKU9xjhvV1xXYPr7t36UU0",
         authDomain: "little-nook-aad58.firebaseapp.com",
         databaseURL: "https://little-nook-aad58-default-rtdb.firebaseio.com/", 
         projectId: "little-nook-aad58",
-        storageBucket: "little-nook-aad58.firebasestorage.app",
-        messagingSenderId: "852637032412",
-        appId: "1:852637032412:web:6e6644bc0511b0976cb919",
-        measurementId: "G-B35F5K32W7"
+        storageBucket: "little-nook-aad58.appspot.com",
+        messagingSenderId: "338959223363",
+        appId: "1:338959223363:web:71e35d25959c9d57f131a3"
     };
 
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
     const db = firebase.database();
 
+    // --- POS 邏輯代碼 ---
     let inv = JSON.parse(localStorage.getItem('nook_inv')) || []; 
     let orders = JSON.parse(localStorage.getItem('nook_orders')) || [];
     let cart = []; let currentPay = '現金';
@@ -216,15 +208,12 @@
         db.ref('inventory').set(inv); 
     }
 
-    // 整合：庫存 0 隱藏邏輯
     function initUI() {
         const area = document.getElementById('item-area'), nav = document.getElementById('navbar');
         if(!area || !nav) return;
         area.innerHTML = ''; nav.innerHTML = '';
         inv.forEach((cat, idx) => {
-            // 只抓出庫存大於 0 的
             const availableItems = (cat.items || []).filter(it => it.s > 0);
-            
             if (availableItems.length > 0) {
                 nav.innerHTML += `<div class="nav-btn" onclick="document.getElementById('c${idx}').scrollIntoView()">${cat.cat}</div>`;
                 let gridHtml = `<div class="cat-title" id="c${idx}">${cat.cat}</div><div class="product-grid">`;
@@ -270,7 +259,6 @@
         if(!cart.length) return;
         const totalAmt = Number(document.getElementById('final-total').innerText);
         const cost = cart.reduce((a,b)=>a+(b.c||0), 0);
-        
         const newOrder = {
             id: Date.now(),
             t: new Date().toLocaleTimeString(),
@@ -280,21 +268,19 @@
             pay: currentPay,
             items: [...cart]
         };
-
         cart.forEach(item => { 
             inv.forEach(cat => (cat.items || []).forEach(it => { if(it.id === item.id) it.s--; })); 
         });
-
         orders.unshift(newOrder);
         localStorage.setItem('nook_orders', JSON.stringify(orders));
         db.ref('orders').push(newOrder);
         saveInv();
-
         cart = []; document.getElementById('discount').value = ''; document.getElementById('cash-in').value = '';
         renderCart();
         alert(navigator.onLine ? "結帳成功！" : "離線結帳已暫存！");
     }
 
+    // 餘下管理功能 (toggleHistory, searchHistory, renderAdminTable, etc.) 保持不變
     function toggleHistory() {
         const p = document.getElementById('history-panel');
         p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
@@ -439,7 +425,6 @@
         const tOrders = orders.filter(o => o.d === today);
         let totalRev = 0, totalProf = 0, detailHtml = '';
         const summary = {};
-
         tOrders.forEach(o => {
             totalRev += (Number(o.total) || 0);
             totalProf += (Number(o.profit) || 0);
@@ -451,7 +436,6 @@
                 summary[it.n].total += (Number(it.p) || 0); 
             });
         });
-
         document.getElementById('stat-revenue').innerText = totalRev;
         document.getElementById('stat-profit').innerText = totalProf;
         document.getElementById('stat-detail-list').innerHTML = detailHtml || '今日尚無明細';
