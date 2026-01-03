@@ -64,6 +64,9 @@
             <div style="margin-top:10px;">
                 <input type="number" id="discount" class="big-input" placeholder="折扣金額" oninput="calc()">
                 <input type="text" id="discount-note" class="small-note" placeholder="折扣原因/備註 (例如: 滿額贈)">
+                <div style="margin-top:5px; display:flex; gap:5px;">
+                    <button onclick="addExtraCost()" style="flex:1; padding:8px; background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; border-radius:8px; cursor:pointer; font-size:0.9em; font-weight:bold;">➕ 紀錄額外支出 (扣除利潤)</button>
+                </div>
             </div>
             <div class="total-display">$<span id="final-total">0</span></div>
             <div style="display:flex; gap:8px; margin-bottom:10px;">
@@ -72,6 +75,15 @@
             </div>
             <input type="number" id="cash-in" class="big-input" placeholder="實收金額" oninput="calcChange()"> 
             <div style="text-align:right; margin-top:5px; font-size: 1.3em;">找零: <span id="cash-change" style="font-weight:bold; color:red; font-size:1.8em;">0</span></div>
+            
+            <div style="margin: 10px 0; padding: 10px; background: #fff5eb; border-radius: 10px; border: 1px dashed var(--main-brown);">
+                <label style="font-size: 0.9em; cursor: pointer;">
+                    <input type="checkbox" id="backdate-mode" onclick="document.getElementById('manual-date').style.display = this.checked ? 'inline-block' : 'none'"> 
+                    📅 補登過去日期資料
+                </label>
+                <input type="date" id="manual-date" style="display:none; margin-left:10px; padding:5px; border:1px solid #ccc; border-radius:5px;">
+            </div>
+
             <button onclick="submitOrder()" style="width:100%; padding:20px; margin-top:15px; background:var(--profit-green); color:white; border:none; border-radius:15px; font-weight:bold; font-size:1.6em;">結帳完成</button>
         </div>
         <div class="card" style="flex:1; font-size: 1em;" id="order-log"></div>
@@ -168,7 +180,7 @@
     let orders = [];
     let cart = []; 
     let currentPay = '現金';
-    let hiddenOrderIds = []; // 專門存放主畫面想隱藏的 ID
+    let hiddenOrderIds = []; 
 
     db.ref('inventory').on('value', snap => { if(snap.val()) { inv = snap.val(); initUI(); } });
     db.ref('orders').on('value', snap => {
@@ -209,6 +221,27 @@
         if(target && target.s > 0) { cart.push({...target}); renderCart(); }
     }
 
+    // 新增：紀錄額外成本函數
+    function addExtraCost() {
+        const amount = prompt("請輸入支出金額：");
+        if (amount === null || amount === "" || isNaN(amount)) return;
+        const reason = prompt("請輸入支出原因 (例如: 補品、買冰塊、車資)：", "雜項支出");
+        if (reason === null) return;
+        
+        const costValue = Number(amount);
+        const extraItem = {
+            id: "支出",
+            n: `[支] ${reason}`,
+            p: 0,           // 售價為 0，不影響營業總額
+            c: costValue,   // 成本為輸入金額，這會導致 profit 變負值
+            s: 99999        // 虛擬庫存
+        };
+        cart.push(extraItem);
+        renderCart();
+        const noteInput = document.getElementById('discount-note');
+        if (!noteInput.value) noteInput.value = `含支出: ${reason}($${costValue})`;
+    }
+
     function renderCart() {
         document.getElementById('cart-list').innerHTML = cart.map((it, i) => `
             <div class="cart-item"><span>${it.id} ${it.n}</span><b>$${it.p}</b>
@@ -235,13 +268,26 @@
 
     function submitOrder() {
         if(!cart.length) return;
+
+        // --- 補登日期處理邏輯 ---
+        let orderDate = new Date().toLocaleDateString('zh-TW');
+        let orderTime = new Date().toLocaleTimeString();
+        const isBackdate = document.getElementById('backdate-mode').checked;
+        const manualDateValue = document.getElementById('manual-date').value;
+        if (isBackdate && manualDateValue) {
+            orderDate = new Date(manualDateValue).toLocaleDateString('zh-TW');
+            orderTime = "23:59:59"; // 補登資料設為該日最後
+        }
+        // ----------------------
+
         const total = Number(document.getElementById('final-total').innerText);
         const discount = Number(document.getElementById('discount').value || 0);
         const note = document.getElementById('discount-note').value;
         const cost = cart.reduce((a,b)=>a+(b.c||0), 0);
+        
         const orderData = {
-            t: new Date().toLocaleTimeString(), 
-            d: new Date().toLocaleDateString('zh-TW'),
+            t: orderTime, 
+            d: orderDate,
             total, 
             profit: total - cost, 
             pay: currentPay, 
@@ -256,9 +302,14 @@
         newOrderRef.set(orderData)
             .then(() => db.ref('inventory').set(inv))
             .then(() => {
-                alert("結帳成功！");
+                alert(isBackdate ? "補登成功！" : "結帳成功！");
                 cart=[]; 
-                ['discount', 'discount-note', 'cash-in'].forEach(id => document.getElementById(id).value = '');
+                ['discount', 'discount-note', 'cash-in', 'manual-date'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.value = '';
+                });
+                document.getElementById('backdate-mode').checked = false;
+                document.getElementById('manual-date').style.display = 'none';
                 renderCart();
             })
             .catch(err => {
@@ -267,7 +318,6 @@
             });
     }
 
-    // 歷史紀錄查詢功能 (保留所有原始邏輯)
     function searchHistory(type) {
         let filter = "";
         if(type === 'day') {
@@ -303,10 +353,8 @@
         document.getElementById('history-result-area').innerHTML = html || "查無資料";
     }
 
-    // 更新主畫面「最近交易」版面 (僅顯示未被隱藏的)
     function updateLog() {
         const displayList = orders.filter(o => !hiddenOrderIds.includes(o.firebaseKey)).slice(0, 8);
-        
         document.getElementById('order-log').innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <strong>📋 最近交易</strong>
@@ -323,13 +371,8 @@
             </div>`).join('');
     }
 
-    // 僅從主畫面隱藏單筆交易 (不影響數據)
-    function hideSingleOrder(key) {
-        hiddenOrderIds.push(key);
-        updateLog();
-    }
+    function hideSingleOrder(key) { hiddenOrderIds.push(key); updateLog(); }
 
-    // 僅從主畫面清空所有交易 (不影響數據)
     function clearLogDisplay() {
         if(confirm("確定要清空版面顯示嗎？\n(這不影響銷售紀錄，可在歷史紀錄中查詢)")) {
             orders.forEach(o => hiddenOrderIds.push(o.firebaseKey));
@@ -337,7 +380,6 @@
         }
     }
 
-    // 真正執行退貨與庫存回補 (位於歷史紀錄面板)
     function refundOrder(key) {
         if(!confirm("⚠️ 警告：這將會永久刪除此交易並回補庫存！確定退貨？")) return;
         const order = orders.find(o => o.firebaseKey === key);
@@ -347,7 +389,6 @@
         }
     }
 
-    // 剩餘所有原始功能 (統計、管理、備份)
     function syncOfflineData() {
         let syncedCount = 0;
         for (let i = 0; i < localStorage.length; i++) {
