@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🧸 LITTLE NOOK POS (具備備份還原功能)</title>
+    <title>🧸 LITTLE NOOK POS (Pro 進階強化版)</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -12,8 +12,9 @@
         :root { --main-brown: #b0a496; --bg-cream: #fcf8f5; --accent-brown: #8c7b6c; --price-red: #d9534f; --profit-green: #6b8e23; }
         body { font-family: sans-serif; background: var(--bg-cream); margin: 0; display: flex; flex-direction: column; height: 100vh; color: #5d5246; overflow: hidden; }
         header { background: var(--main-brown); color: white; padding: 12px; text-align: center; font-size: 1.3em; font-weight: bold; flex-shrink: 0; }
-        .nav-bar { background: #e8e0d9; padding: 10px; display: flex; gap: 10px; overflow-x: auto; border-bottom: 2px solid #d1c7bc; flex-shrink: 0; }
+        .nav-bar { background: #e8e0d9; padding: 10px; display: flex; gap: 10px; overflow-x: auto; border-bottom: 2px solid #d1c7bc; flex-shrink: 0; align-items: center; }
         .nav-btn { background: white; border: 1px solid #d1c7bc; padding: 8px 18px; border-radius: 20px; white-space: nowrap; cursor: pointer; font-size: 1.1em; }
+        .sync-btn { background: #ff9800; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; margin-left: auto; }
         .main-content { display: flex; flex: 1; overflow: hidden; padding: 10px; gap: 10px; }
         .item-area { flex: 1.8; overflow-y: auto; background: white; border-radius: 15px; padding: 15px; border: 2px solid #e8e0d9; }
         .cat-title { background: #fdf5f0; padding: 8px 15px; border-radius: 20px; margin: 15px 0 8px; font-weight: bold; border-left: 8px solid var(--main-brown); font-size: 1.2em; }
@@ -31,26 +32,24 @@
         .pay-btn { flex: 1; padding: 15px; border-radius: 10px; border: 1px solid #ccc; background: white; cursor: pointer; font-weight: bold; font-size: 1.3em;}
         .pay-btn.active { background: var(--accent-brown); color: white; border-color: var(--accent-brown); }
         #admin-panel, #history-panel { position: fixed; inset: 10px; background: white; z-index: 1000; border-radius: 20px; display: none; flex-direction: column; padding: 15px; border: 3px solid var(--main-brown); box-shadow: 0 0 50px rgba(0,0,0,0.3); }
-        .admin-layout { display: grid; grid-template-columns: 1.6fr 0.9fr; gap: 15px; flex: 1; overflow: hidden; }
+        .admin-layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 15px; flex: 1; overflow: hidden; }
         .add-row-top { background: #f0fdf4; padding: 15px; border: 2px solid var(--profit-green); border-radius: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
-        .add-row-top div { display: flex; flex-direction: column; gap: 3px; }
-        .add-row-top label { font-size: 0.9em; color: #444; font-weight: bold; }
-        .add-row-top input, .add-row-top select { font-size: 1.1em; padding: 8px; border: 1px solid #ccc; border-radius: 8px; background: white; }
-        .add-row-top button { font-size: 1.1em; padding: 10px 25px; background: var(--profit-green); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; align-self: flex-end; }
         .admin-table-container { overflow: auto; border: 1px solid #eee; border-radius: 8px; }
-        table { width: 100%; border-collapse: collapse; font-size: 1em; }
+        table { width: 100%; border-collapse: collapse; }
         th { background: #f4f4f4; position: sticky; top: 0; padding: 10px; border: 1px solid #ddd; z-index: 5; }
         td { padding: 8px; border: 1px solid #ddd; text-align: center; }
-        .del-x { color: red; font-weight: bold; cursor: pointer; font-size: 1.4em; padding: 5px; }
+        .del-x { color: red; font-weight: bold; cursor: pointer; font-size: 1.4em; }
         .order-tag { background: #eee; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-right: 4px; color: #666; display: inline-block; margin-top: 4px; border: 1px solid #ddd; }
         .admin-input-large { font-size: 1.2em !important; padding: 8px !important; width: 100%; box-sizing: border-box; }
-        .admin-id-text { font-size: 1.1em; color: var(--accent-brown); font-weight: bold; display: block; margin-bottom: 2px; }
     </style>
 </head>
 <body>
 
-<header>🧸 LITTLE NOOK POS (資料還原修正版)</header>
-<div class="nav-bar" id="navbar"></div>
+<header>🧸 LITTLE NOOK POS (Pro 進階強化版)</header>
+<div class="nav-bar">
+    <div id="navbar" style="display:flex; gap:10px;"></div>
+    <button class="sync-btn" onclick="syncOfflineData()">🔄 離線數據同步</button>
+</div>
 
 <div class="main-content">
     <div class="item-area" id="item-area">同步中...</div>
@@ -58,7 +57,7 @@
         <div class="card">
             <strong>🛒 當前清單</strong>
             <div id="cart-list"></div>
-            <div style="margin-top:10px;"><input type="number" id="discount" class="big-input" placeholder="折扣 (減價)" oninput="calc()"></div>
+            <div style="margin-top:10px;"><input type="number" id="discount" class="big-input" placeholder="折扣" oninput="calc()"></div>
             <div class="total-display">$<span id="final-total">0</span></div>
             <div style="display:flex; gap:8px; margin-bottom:10px;">
                 <button class="pay-btn active" id="btn-cash" onclick="setPay('現金')">💵 現金</button>
@@ -80,18 +79,16 @@
 <div id="history-panel">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
         <h2 style="margin:0;">📜 歷史紀錄管理</h2>
-        <button onclick="toggleHistory()" style="padding:8px 15px; cursor:pointer;">✕ 關閉</button>
+        <button onclick="toggleHistory()" style="padding:8px 15px;">✕ 關閉</button>
     </div>
     <div style="background:#fdf5f0; padding:15px; border-radius:10px; margin-bottom:15px; display:flex; gap:15px; align-items:center;">
         <div>
-            <label>單日查詢：</label>
-            <input type="date" id="search-date" style="padding:8px;">
-            <button onclick="searchHistory('day')" style="padding:8px 15px; background:var(--main-brown); color:white; border:none; cursor:pointer;">🔍 查詢單日</button>
+            <label>單日查詢：</label><input type="date" id="search-date" style="padding:8px;">
+            <button onclick="searchHistory('day')" style="padding:8px 15px; background:var(--main-brown); color:white; border:none;">🔍 查詢單日</button>
         </div>
         <div style="border-left: 2px solid #ddd; padding-left: 15px;">
-            <label>當月查詢：</label>
-            <input type="month" id="search-month" style="padding:8px;">
-            <button onclick="searchHistory('month')" style="padding:8px 15px; background:var(--accent-brown); color:white; border:none; cursor:pointer;">📊 查詢當月</button>
+            <label>當月查詢：</label><input type="month" id="search-month" style="padding:8px;">
+            <button onclick="searchHistory('month')" style="padding:8px 15px; background:var(--accent-brown); color:white; border:none;">📊 查詢當月</button>
         </div>
     </div>
     <div id="history-result-area" style="flex:1; overflow-y:auto; background:white; padding:15px; border-radius:10px; border:1px solid #eee;"></div>
@@ -99,13 +96,16 @@
 
 <div id="admin-panel">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <h2 style="margin:0;">⚙️ 商品與庫存管理</h2>
+        <h2 style="margin:0;">⚙️ 管理中心</h2>
         <div style="display:flex; gap:10px;">
+            <select id="admin-cat-jump" onchange="jumpToAdminCat(this.value)" style="padding:8px; border-radius:5px;">
+                <option value="">快速跳轉分類...</option>
+            </select>
             <button onclick="exportToExcel()" style="padding:8px 15px; background:#217346; color:white; border:none; cursor:pointer;">📥 匯出 Excel</button>
-            <button onclick="backupData()" style="padding:8px 15px; background:#666; color:white; border:none; cursor:pointer;">💾 備份</button>
+            <button onclick="backupData()" style="padding:8px 15px; background:#666; color:white; border:none; cursor:pointer;">💾 備份數據</button>
             <input type="file" id="import-file" style="display:none;" onchange="importData(event)">
             <button onclick="document.getElementById('import-file').click()" style="padding:8px 15px; background:#d9534f; color:white; border:none; cursor:pointer;">⚠️ 還原數據</button>
-            <button onclick="toggleAdmin()" style="padding:8px 15px; cursor:pointer;">✕ 關閉</button>
+            <button onclick="toggleAdmin()" style="padding:8px 15px;">✕ 關閉</button>
         </div>
     </div>
     <div class="add-row-top">
@@ -115,22 +115,30 @@
         <div><label>成本</label><input type="number" id="new-c" style="width:60px;"></div>
         <div><label>售價</label><input type="number" id="new-p" style="width:60px;"></div>
         <div><label>庫存</label><input type="number" id="new-s" style="width:60px;"></div>
-        <button onclick="addNewProduct()">➕ 新增品項</button>
+        <button onclick="addNewProduct()" style="background:var(--profit-green); color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">➕ 新增商品</button>
     </div>
     <div class="admin-layout">
         <div class="admin-table-container">
             <table>
-                <thead><tr><th style="width:80px;">順序</th><th>品名</th><th style="width:70px;">成本</th><th style="width:70px;">售價</th><th style="width:70px;">庫存</th><th style="width:60px;">刪</th></tr></thead>
+                <thead><tr><th>順序</th><th>品名</th><th>成本</th><th>售價</th><th>庫存</th><th>刪</th></tr></thead>
                 <tbody id="admin-tbody"></tbody>
             </table>
         </div>
-        <div style="background:#f9f9f9; padding:15px; border-radius:10px; overflow-y:auto;">
-            <h3>📊 今日營收</h3>
-            <div style="font-size:1.2em; margin-bottom:10px;">營收: <b id="stat-revenue" style="color:var(--price-red);">0</b> / 利潤: <b id="stat-profit" style="color:var(--profit-green);">0</b></div>
-            <table style="font-size:1em;">
-                <thead><tr style="background:#eee;"><th>品名</th><th>量</th><th>額</th></tr></thead>
-                <tbody id="stat-tbody"></tbody>
-            </table>
+        <div style="background:#f9f9f9; padding:15px; border-radius:10px; overflow-y:auto; display:flex; flex-direction:column; gap:20px;">
+            <div>
+                <h3>📊 今日單品銷售排行</h3>
+                <table style="font-size:0.9em;">
+                    <thead><tr style="background:#eee;"><th>品名</th><th>量</th><th>額</th></tr></thead>
+                    <tbody id="stat-tbody"></tbody>
+                </table>
+            </div>
+            <div style="border-top:2px solid #ddd; padding-top:15px;">
+                <h3>📅 本月單品銷售統計</h3>
+                <table style="font-size:0.9em;">
+                    <thead><tr style="background:#ddd;"><th>品名</th><th>累計量</th><th>累計額</th></tr></thead>
+                    <tbody id="stat-month-tbody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -146,7 +154,7 @@
         appId: "1:338959223363:web:71e35d25959c9d57f131a3"
     };
 
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
     let inv = []; 
@@ -154,76 +162,42 @@
     let cart = []; 
     let currentPay = '現金';
 
+    // 監聽雲端數據
     db.ref('inventory').on('value', snap => { if(snap.val()) { inv = snap.val(); initUI(); } });
     db.ref('orders').on('value', snap => {
         const data = snap.val();
         orders = data ? Object.keys(data).map(k => ({...data[k], firebaseKey: k})).reverse() : [];
-        updateLog(); renderStatTable();
+        updateLog(); renderStatTable(); renderMonthStatTable();
     });
 
-    // 關鍵：匯入與還原功能
-    function importData(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        if (!confirm("⚠️ 這將覆蓋目前雲端的所有庫存與訂單數據！確定要還原嗎？")) return;
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const data = JSON.parse(e.target.result);
-                if (data.inventory && data.orders) {
-                    // 將數據格式化為 Firebase 物件格式（Firebase 儲存 orders 是以 key 為主）
-                    const ordersObj = {};
-                    if (Array.isArray(data.orders)) {
-                        data.orders.forEach((o, i) => {
-                            const key = o.firebaseKey || 'backup_order_' + i;
-                            ordersObj[key] = o;
-                        });
-                    } else {
-                        Object.assign(ordersObj, data.orders);
-                    }
-
-                    // 同步到 Firebase
-                    db.ref('/').update({
-                        inventory: data.inventory,
-                        orders: ordersObj
-                    }).then(() => {
-                        alert("✅ 數據已成功還原！");
-                        location.reload();
-                    });
-                } else {
-                    alert("❌ 備份檔格式不正確。");
-                }
-            } catch (err) {
-                alert("❌ 讀取失敗：" + err.message);
-            }
-        };
-        reader.readAsText(file);
-    }
-
+    // 初始化 UI
     function initUI() {
         const area = document.getElementById('item-area'), nav = document.getElementById('navbar');
-        if(!area || !nav) return;
+        const jumpSelect = document.getElementById('admin-cat-jump');
         area.innerHTML = ''; nav.innerHTML = '';
+        jumpSelect.innerHTML = '<option value="">快速跳轉分類...</option>';
+        
         inv.forEach((cat, idx) => {
-            const items = (cat.items || []).filter(it => it.s > 0);
-            if(items.length > 0) {
-                nav.innerHTML += `<div class="nav-btn" onclick="document.getElementById('c${idx}').scrollIntoView()">${cat.cat}</div>`;
-                let gridHtml = `<div class="cat-title" id="c${idx}">${cat.cat}</div><div class="product-grid">`;
-                items.forEach(it => {
+            nav.innerHTML += `<div class="nav-btn" onclick="document.getElementById('c${idx}').scrollIntoView()">${cat.cat}</div>`;
+            jumpSelect.innerHTML += `<option value="ac${idx}">${cat.cat}</option>`;
+            
+            let gridHtml = `<div class="cat-title" id="c${idx}">${cat.cat}</div><div class="product-grid">`;
+            (cat.items || []).forEach(it => {
+                if(it.s > 0) {
                     gridHtml += `<div class="p-btn" onclick="addCart('${it.id}')">
                         <div class="p-name">${it.id} ${it.n}</div>
                         <div class="p-price">$${it.p}</div>
                         <div class="p-stock">存:${it.s}</div>
                     </div>`;
-                });
-                area.innerHTML += gridHtml + '</div>';
-            }
+                }
+            });
+            area.innerHTML += gridHtml + '</div>';
         });
         updateCatSelect();
         if(document.getElementById('admin-panel').style.display === 'flex') renderAdminTable();
     }
 
+    // 購物車功能
     function addCart(id) {
         let target = null;
         inv.forEach(c => (c.items || []).forEach(i => { if(i.id === id) target = i; }));
@@ -254,117 +228,129 @@
         document.getElementById('btn-elec').className = m==='電支'?'pay-btn active':'pay-btn';
     }
 
+    // 結帳與離線機制
     function submitOrder() {
         if(!cart.length) return;
         const total = Number(document.getElementById('final-total').innerText);
         const cost = cart.reduce((a,b)=>a+(b.c||0), 0);
-        const newOrder = {
+        const orderData = {
             t: new Date().toLocaleTimeString(), d: new Date().toLocaleDateString(),
             total, profit: total - cost, pay: currentPay, items: [...cart]
         };
+        
+        // 扣庫存
         cart.forEach(item => { inv.forEach(c => (c.items || []).forEach(i => { if(i.id === item.id) i.s--; })); });
-        db.ref('orders').push(newOrder).then(() => db.ref('inventory').set(inv)).then(() => {
-            cart=[]; document.getElementById('discount').value=''; document.getElementById('cash-in').value=''; renderCart();
-            alert("結帳成功");
-        });
+
+        // 寫入 Firebase 並檢查是否成功
+        const newOrderRef = db.ref('orders').push();
+        newOrderRef.set(orderData)
+            .then(() => db.ref('inventory').set(inv))
+            .then(() => {
+                alert("結帳成功！");
+                cart=[]; document.getElementById('discount').value=''; document.getElementById('cash-in').value=''; renderCart();
+            })
+            .catch(err => {
+                alert("⚠️ 網路不穩，資料已暫存在您的手機，請稍後點擊「離線同步」。");
+                localStorage.setItem('pendingOrder_' + Date.now(), JSON.stringify(orderData));
+            });
     }
 
-    function deleteOrder(key) {
-        if(!confirm("確定退貨？庫存將自動補回。")) return;
-        const order = orders.find(o => o.firebaseKey === key);
-        if(!order) return;
-        (order.items || []).forEach(ri => { inv.forEach(c => (c.items || []).forEach(i => { if(i.id === ri.id) i.s++; })); });
-        const updates = {}; updates['/orders/' + key] = null; updates['/inventory'] = inv;
-        db.ref().update(updates).then(() => alert("已退貨並還原庫存"));
+    function syncOfflineData() {
+        let syncedCount = 0;
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key.startsWith('pendingOrder_')) {
+                const data = JSON.parse(localStorage.getItem(key));
+                db.ref('orders').push(data);
+                localStorage.removeItem(key);
+                syncedCount++;
+            }
+        }
+        alert(syncedCount > 0 ? `✅ 已成功同步 ${syncedCount} 筆離線訂單！` : "目前沒有需要同步的數據。");
     }
 
-    function updateLog() {
-        document.getElementById('order-log').innerHTML = "<strong>📋 最近交易</strong><hr>" + 
-        orders.slice(0,6).map(o => {
-            const codes = (o.items || []).map(i => `<span class="order-tag">${i.id}</span>`).join('');
-            return `<div style="padding:5px 0; border-bottom:1px solid #eee;"><div style="display:flex; justify-content:space-between;"><b>$${o.total} (${o.t})</b><span onclick="deleteOrder('${o.firebaseKey}')" style="color:red; cursor:pointer">✕</span></div><div>${codes}</div></div>`;
-        }).join('');
-    }
-
+    // 統計排行功能
     function renderStatTable() {
         const today = new Date().toLocaleDateString();
         const tOrders = orders.filter(o => o.d === today);
-        let rev = 0, prof = 0; const sum = {};
-        tOrders.forEach(o => {
-            rev += (Number(o.total) || 0); prof += (Number(o.profit) || 0);
-            (o.items||[]).forEach(i => { if(!sum[i.n]) sum[i.n]={c:0,t:0}; sum[i.n].c++; sum[i.n].t += (Number(i.p) || 0); });
+        const sum = {};
+        tOrders.forEach(o => (o.items||[]).forEach(i => { 
+            if(!sum[i.n]) sum[i.n]={c:0,t:0}; sum[i.n].c++; sum[i.n].t += i.p; 
+        }));
+        let html = ''; 
+        Object.keys(sum).sort((a,b)=>sum[b].c - sum[a].c).forEach(n => {
+            html += `<tr><td style="text-align:left;">${n}</td><td>${sum[n].c}</td><td>$${sum[n].t}</td></tr>`;
         });
-        document.getElementById('stat-revenue').innerText = rev;
-        document.getElementById('stat-profit').innerText = prof;
-        let html = ''; for(let n in sum) html += `<tr><td style="text-align:left;">${n}</td><td>${sum[n].c}</td><td>$${sum[n].t}</td></tr>`;
-        document.getElementById('stat-tbody').innerHTML = (html || '<tr><td colspan="3">今日無銷售</td></tr>');
+        document.getElementById('stat-tbody').innerHTML = html || '<tr><td colspan="3">今日尚無銷售</td></tr>';
     }
 
-    function searchHistory(mode) {
-        let targetList = [];
-        let title = "";
-        if(mode === 'day') {
-            const date = new Date(document.getElementById('search-date').value).toLocaleDateString();
-            targetList = orders.filter(o => o.d === date);
-            title = date + " 銷售明細";
-        } else {
-            const month = document.getElementById('search-month').value;
-            targetList = orders.filter(o => {
-                const oDate = new Date(o.d);
-                const oMonth = oDate.getFullYear() + "-" + String(oDate.getMonth() + 1).padStart(2, '0');
-                return oMonth === month;
+    function renderMonthStatTable() {
+        const now = new Date();
+        const thisMonth = now.getFullYear() + "/" + (now.getMonth() + 1);
+        const mOrders = orders.filter(o => o.d.startsWith(thisMonth));
+        const sum = {};
+        mOrders.forEach(o => (o.items||[]).forEach(i => { 
+            if(!sum[i.n]) sum[i.n]={c:0,t:0}; sum[i.n].c++; sum[i.n].t += i.p; 
+        }));
+        let html = '';
+        Object.keys(sum).sort((a,b)=>sum[b].c - sum[a].c).forEach(n => {
+            html += `<tr><td style="text-align:left;">${n}</td><td>${sum[n].c}</td><td>$${sum[n].t}</td></tr>`;
+        });
+        document.getElementById('stat-month-tbody').innerHTML = html || '<tr><td colspan="3">本月尚無數據</td></tr>';
+    }
+
+    // 商品管理功能 (修正新分類商品新增問題)
+    function addNewProduct() {
+        const catN = document.getElementById('select-cat').value;
+        const id = document.getElementById('new-id').value, n = document.getElementById('new-n').value;
+        const c = Number(document.getElementById('new-c').value), p = Number(document.getElementById('new-p').value), s = Number(document.getElementById('new-s').value);
+        if(!n || !catN) { alert("請填寫品名並選擇分類"); return; }
+        
+        const category = inv.find(v => v.cat === catN);
+        if(category) {
+            if(!category.items) category.items = [];
+            category.items.push({id, n, c, p, s});
+            db.ref('inventory').set(inv).then(() => {
+                alert(`「${n}」已成功加入「${catN}」`);
+                ['new-id','new-n','new-c','new-p','new-s'].forEach(f => document.getElementById(f).value='');
             });
-            title = month + " 月度結算";
         }
-        let html = `<h3>📅 ${title}</h3><table style="width:100%"><thead><tr style="background:#eee;"><th>時間/日期</th><th>內容</th><th>金額</th><th>操作</th></tr></thead><tbody>`;
-        targetList.forEach(o => {
-            const codes = (o.items || []).map(i => `<span class="order-tag">${i.id}</span>`).join('');
-            html += `<tr style="border-bottom:1px solid #eee;"><td>${o.d}<br>${o.t}</td><td style="text-align:left;">${codes}</td><td>$${o.total}</td><td><button onclick="deleteOrder('${o.firebaseKey}')" style="color:red">退貨</button></td></tr>`;
-        });
-        document.getElementById('history-result-area').innerHTML = html + "</tbody></table>";
     }
 
-    function exportToExcel() {
-        if(!orders.length) return alert("尚無銷售數據可匯出");
-        const data = orders.map(o => ({ "日期": o.d, "時間": o.t, "總金額": o.total, "商品": (o.items || []).map(i => `${i.id}(${i.n})`).join(', ') }));
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "銷售紀錄");
-        XLSX.writeFile(wb, "LittleNook_Sales.xlsx");
+    function checkNewCat(val) {
+        if(val==="ADD") { 
+            const n = prompt("請輸入新分類名稱："); 
+            if(n){ 
+                inv.push({cat:n, items:[]}); 
+                db.ref('inventory').set(inv).then(() => updateCatSelect()); 
+            } else {
+                document.getElementById('select-cat').selectedIndex = 0;
+            }
+        }
     }
 
-    function backupData() {
-        const fullData = { inventory: inv, orders: orders };
-        const blob = new Blob([JSON.stringify(fullData, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `LittleNook_Backup_${new Date().toLocaleDateString()}.json`;
-        a.click();
+    function updateCatSelect() {
+        const sel = document.getElementById('select-cat');
+        sel.innerHTML = inv.map(c => `<option value="${c.cat}">${c.cat}</option>`).join('') + `<option value="ADD">➕ 新增分類</option>`;
     }
 
-    function toggleAdmin() {
-        const p = document.getElementById('admin-panel');
-        p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
-        if(p.style.display === 'flex') renderAdminTable();
-    }
-    function toggleHistory() {
-        const p = document.getElementById('history-panel');
-        p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
+    function jumpToAdminCat(val) {
+        if(val) document.getElementById(val).scrollIntoView({behavior: "smooth"});
     }
 
     function renderAdminTable() {
         let html = '';
         inv.forEach((cat, ci) => {
-            html += `<tr style="background:#f4f4f4;"><td colspan="6" style="text-align:left; padding:10px;"><b>${cat.cat}</b></td></tr>`;
+            html += `<tr id="ac${ci}" style="background:#eee;"><td colspan="6" style="text-align:left; padding:10px;"><b>📂 ${cat.cat}</b></td></tr>`;
             (cat.items || []).forEach((it, ii) => {
-                html += `<tr><td><span onclick="move(${ci},${ii},-1)" style="cursor:pointer">↑</span> <span onclick="move(${ci},${ii},1)" style="cursor:pointer">↓</span></td>
-                    <td style="text-align:left;"><span class="admin-id-text">${it.id}</span>
-                    <input type="text" value="${it.n}" onchange="editItem(${ci},${ii},'n',this.value)" class="admin-input-large"></td>
-                    <td><input type="number" value="${it.c}" onchange="editItem(${ci},${ii},'c',this.value)" style="width:60px; padding:5px;"></td>
-                    <td><input type="number" value="${it.p}" onchange="editItem(${ci},${ii},'p',this.value)" style="width:60px; padding:5px;"></td>
-                    <td><input type="number" value="${it.s}" onchange="editItem(${ci},${ii},'s',this.value)" style="width:60px; padding:5px;"></td>
-                    <td><span onclick="delP(${ci},${ii})" class="del-x">✕</span></td></tr>`;
+                html += `<tr>
+                    <td><span onclick="move(${ci},${ii},-1)" style="cursor:pointer">↑</span> <span onclick="move(${ci},${ii},1)" style="cursor:pointer">↓</span></td>
+                    <td style="text-align:left;"><input type="text" value="${it.n}" onchange="editItem(${ci},${ii},'n',this.value)" class="admin-input-large"></td>
+                    <td><input type="number" value="${it.c}" onchange="editItem(${ci},${ii},'c',this.value)" style="width:50px;"></td>
+                    <td><input type="number" value="${it.p}" onchange="editItem(${ci},${ii},'p',this.value)" style="width:50px;"></td>
+                    <td><input type="number" value="${it.s}" onchange="editItem(${ci},${ii},'s',this.value)" style="width:50px;"></td>
+                    <td><span onclick="delP(${ci},${ii})" class="del-x">✕</span></td>
+                </tr>`;
             });
         });
         document.getElementById('admin-tbody').innerHTML = html;
@@ -376,18 +362,53 @@
         if(ii+dir>=0 && ii+dir<items.length){ [items[ii], items[ii+dir]]=[items[ii+dir], items[ii]]; db.ref('inventory').set(inv); }
     }
     function delP(ci, ii) { if(confirm("確定刪除？")){ inv[ci].items.splice(ii,1); db.ref('inventory').set(inv); } }
-    function updateCatSelect() {
-        document.getElementById('select-cat').innerHTML = inv.map(c => `<option value="${c.cat}">${c.cat}</option>`).join('') + `<option value="ADD">➕ 新增分類</option>`;
+
+    // 備份與還原
+    function backupData() {
+        const fullData = { inventory: inv, orders: orders };
+        const blob = new Blob([JSON.stringify(fullData, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `LittleNook_FULL_Backup_${new Date().toLocaleDateString()}.json`;
+        a.click();
     }
-    function checkNewCat(val) { if(val==="ADD") { const n = prompt("分類名稱："); if(n){ inv.push({cat:n, items:[]}); db.ref('inventory').set(inv); } } }
-    function addNewProduct() {
-        const catN = document.getElementById('select-cat').value;
-        const id = document.getElementById('new-id').value, n = document.getElementById('new-n').value;
-        const c = Number(document.getElementById('new-c').value), p = Number(document.getElementById('new-p').value), s = Number(document.getElementById('new-s').value);
-        if(!n) return;
-        inv.find(v => v.cat === catN).items.push({id, n, c, p, s});
-        db.ref('inventory').set(inv);
-        ['new-id','new-n','new-c','new-p','new-s'].forEach(f => document.getElementById(f).value='');
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file || !confirm("⚠️ 這將覆蓋雲端所有數據！確定還原？")) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            const data = JSON.parse(e.target.result);
+            if (data.inventory) {
+                db.ref('/').set(data).then(() => { alert("✅ 還原成功！"); location.reload(); });
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function exportToExcel() {
+        const data = orders.map(o => ({ "日期": o.d, "時間": o.t, "總金額": o.total, "內容": o.items.map(i=>i.n).join(',') }));
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "銷售紀錄");
+        XLSX.writeFile(wb, `Sales_${new Date().toLocaleDateString()}.xlsx`);
+    }
+
+    function toggleAdmin() { const p = document.getElementById('admin-panel'); p.style.display = p.style.display === 'flex' ? 'none' : 'flex'; if(p.style.display === 'flex') renderAdminTable(); }
+    function toggleHistory() { const p = document.getElementById('history-panel'); p.style.display = p.style.display === 'flex' ? 'none' : 'flex'; }
+    function updateLog() {
+        document.getElementById('order-log').innerHTML = "<strong>📋 最近交易</strong><hr>" + orders.slice(0,6).map(o => `
+            <div style="padding:5px 0; border-bottom:1px solid #eee;">
+                <div style="display:flex; justify-content:space-between;"><b>$${o.total} (${o.t})</b><span onclick="deleteOrder('${o.firebaseKey}')" style="color:red; cursor:pointer">✕</span></div>
+                <div>${o.items.map(i=>`<span class="order-tag">${i.n}</span>`).join('')}</div>
+            </div>`).join('');
+    }
+    function deleteOrder(key) {
+        if(!confirm("退貨？")) return;
+        const order = orders.find(o => o.firebaseKey === key);
+        order.items.forEach(ri => inv.forEach(c => (c.items||[]).forEach(i => { if(i.id===ri.id) i.s++; })));
+        db.ref('orders/' + key).remove().then(() => db.ref('inventory').set(inv));
     }
 </script>
 </body>
