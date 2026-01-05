@@ -9,6 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <style>
+        
         :root { --main-brown: #b0a496; --bg-cream: #fcf8f5; --accent-brown: #8c7b6c; --price-red: #d9534f; --profit-green: #6b8e23; }
         body { font-family: sans-serif; background: var(--bg-cream); margin: 0; display: flex; flex-direction: column; height: 100vh; color: #5d5246; overflow: hidden; }
         header { background: var(--main-brown); color: white; padding: 12px; text-align: center; font-size: 1.3em; font-weight: bold; flex-shrink: 0; }
@@ -46,34 +47,7 @@
         .history-del-btn { position: absolute; top: 10px; right: 10px; color: red; cursor: pointer; font-weight: bold; border: 1px solid red; padding: 2px 5px; border-radius: 4px; font-size: 0.8em; }
         .clear-log-btn { background: none; border: 1px solid #b0a496; color: #b0a496; font-size: 0.75em; padding: 2px 8px; border-radius: 5px; cursor: pointer; }
     </style>
-    /* 登入遮罩樣式 */
-        #login-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-cream);
-            z-index: 10000; /* 確保在所有面板之上 */
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-        .login-box {
-            background: white;
-            padding: 30px;
-            border-radius: 20px;
-            border: 3px solid var(--main-brown);
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-        #login-pw {
-            font-size: 1.5em;
-            padding: 10px;
-            width: 200px;
-            text-align: center;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            margin: 20px 0;
-        }
+   
 </head>
 <body>
     <div id="login-overlay">
@@ -85,7 +59,45 @@
         <button onclick="checkLogin()" style="padding:10px 40px; background:var(--main-brown); color:white; border:none; border-radius:10px; font-size:1.1em; cursor:pointer;">登入</button>
     </div>
 </div>
+<style>
+    /* ... 這裡保留原本頂部的樣式 (root, body, header 等) ... */
 
+    /* 確保這段「登入遮罩樣式」被包含在 <style> 標籤內 */
+    #login-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: var(--bg-cream);
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    .login-box {
+        background: white;
+        padding: 30px;
+        border-radius: 20px;
+        border: 3px solid var(--main-brown);
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    #login-pw {
+        font-size: 1.5em;
+        padding: 10px;
+        width: 200px;
+        text-align: center;
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        margin: 20px 0;
+    }
+</style> ```
+
+### 💡 其他檢查點
+* **Firebase Config**: 您代碼中的 Firebase API Key 已公開，若此專案是實際對外運行的，建議在 Firebase 控制台設定「來源網域限制」，以防被他人盜用流量。
+* **背景顏色變數**: 在登入遮罩中使用了 `background: var(--bg-cream);`，請確保這個變數在 `:root` 中有被正確定義。
+
+---
+既然您喜歡準備禮物，如果您希望在 POS 系統中加入一個**「禮物包裝」**的快速按鈕（例如自動加收包裝費或註記），我可以幫您撰寫相關的功能代碼。您需要這項功能嗎？
 <header>🧸 LITTLE NOOK POS (Pro 進階強化版)</header>
 <div class="nav-bar">
     <div id="navbar" style="display:flex; gap:10px;"></div>
