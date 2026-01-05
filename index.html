@@ -10,10 +10,21 @@
     
     <style>
         :root { --main-brown: #b0a496; --bg-cream: #fcf8f5; --accent-brown: #8c7b6c; --price-red: #d9534f; --profit-green: #6b8e23; }
-       body { font-family: sans-serif; background: var(--bg-cream); margin: 0; display: flex; flex-direction: column; min-height: 100vh; color: #5d5246; }
+        
+        /* 修正：固定身體高度，隱藏全頁面捲軸 */
+        body { 
+            font-family: sans-serif; 
+            background: var(--bg-cream); 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            color: #5d5246; 
+            overflow: hidden; 
+        }
+
         header { background: var(--main-brown); color: white; padding: 12px; text-align: center; font-size: 1.3em; font-weight: bold; flex-shrink: 0; }
         
-        /* 1. 登入畫面樣式 */
         #login-screen { position: fixed; inset: 0; background: var(--main-brown); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
         .login-box { background: white; padding: 30px; border-radius: 20px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 80%; max-width: 300px; }
         .login-input { font-size: 1.5em; padding: 10px; width: 100%; border-radius: 10px; border: 2px solid #ddd; text-align: center; box-sizing: border-box; margin: 15px 0; }
@@ -21,15 +32,45 @@
         .nav-bar { background: #e8e0d9; padding: 10px; display: flex; gap: 10px; overflow-x: auto; border-bottom: 2px solid #d1c7bc; flex-shrink: 0; align-items: center; }
         .nav-btn { background: white; border: 1px solid #d1c7bc; padding: 8px 18px; border-radius: 20px; white-space: nowrap; cursor: pointer; font-size: 1.1em; }
         .sync-btn { background: #ff9800; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; margin-left: auto; }
-        .main-content { display: flex; flex: 1; overflow: hidden; padding: 10px; gap: 10px; }
-        .item-area { flex: 1.8; overflow-y: auto; background: white; border-radius: 15px; padding: 15px; border: 2px solid #e8e0d9; }
+        
+        /* 修正：主內容區填滿剩餘高度 */
+        .main-content { 
+            display: flex; 
+            flex: 1; 
+            overflow: hidden; 
+            padding: 10px; 
+            gap: 10px; 
+            min-height: 0; 
+        }
+
+        /* 修正：左側商品區獨立捲動 */
+        .item-area { 
+            flex: 1.8; 
+            overflow-y: auto; 
+            background: white; 
+            border-radius: 15px; 
+            padding: 15px; 
+            border: 2px solid #e8e0d9; 
+        }
+
         .cat-title { background: #fdf5f0; padding: 8px 15px; border-radius: 20px; margin: 15px 0 8px; font-weight: bold; border-left: 8px solid var(--main-brown); font-size: 1.2em; }
         .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 10px; }
         .p-btn { background: white; border: 1px solid #f0e6dd; border-radius: 12px; padding: 10px 5px; text-align: center; cursor: pointer; box-shadow: 2px 2px 0 #e8e0d9; min-height: 90px; display: flex; flex-direction: column; justify-content: center; }
         .p-name { font-size: 0.85em; font-weight: bold; margin-bottom: 5px; height: 2.8em; overflow: hidden; line-height: 1.4; }
         .p-price { color: #c2966d; font-size: 1.2em; font-weight: bold; }
         .p-stock { font-size: 0.8em; color: #999; }
-        .checkout-area { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 320px; overflow-y: auto; }
+
+        /* 修正：右側結帳區與紀錄區獨立捲動 */
+        .checkout-area { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            min-width: 320px; 
+            overflow-y: auto; 
+            height: 100%;
+        }
+
         .card { background: white; border-radius: 15px; padding: 12px; border: 2px solid #e8e0d9; }
         #cart-list { max-height: 200px; overflow-y: auto; border-bottom: 2px dashed #e8e0d9; }
         .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 5px; font-size: 1.1em; border-bottom: 1px solid #eee; }
@@ -51,7 +92,6 @@
         .history-card { background: #fdfdfd; border: 1px solid #eee; padding: 10px; border-radius: 8px; margin-bottom: 10px; position: relative; border-left: 6px solid var(--main-brown); }
         .history-del-btn { position: absolute; top: 10px; right: 10px; color: red; cursor: pointer; font-weight: bold; border: 1px solid red; padding: 2px 5px; border-radius: 4px; font-size: 0.8em; }
         .clear-log-btn { background: none; border: 1px solid #b0a496; color: #b0a496; font-size: 0.75em; padding: 2px 8px; border-radius: 5px; cursor: pointer; }
-        /* 新增：淨利標籤樣式 */
         .profit-badge { background: #f0fdf4; color: var(--profit-green); padding: 2px 8px; border-radius: 5px; font-weight: bold; margin-left: 10px; border: 1px solid #dcfce7; }
         .edit-cat-btn { background: #eee; border: 1px solid #ccc; padding: 2px 8px; border-radius: 5px; font-size: 0.8em; cursor: pointer; margin-left: 10px; color: #666; }
     </style>
@@ -105,11 +145,11 @@
 
                 <button onclick="submitOrder()" style="width:100%; padding:20px; margin-top:15px; background:var(--profit-green); color:white; border:none; border-radius:15px; font-weight:bold; font-size:1.6em;">結帳完成</button>
             </div>
-            <div class="card" style="flex:1; font-size: 1em;" id="order-log"></div>
+            <div class="card" style="font-size: 1em; flex-shrink: 0;" id="order-log"></div>
         </div>
     </div>
 
-    <div style="padding:15px; text-align:center; display: flex; justify-content: center; gap: 15px;">
+    <div style="padding:15px; text-align:center; display: flex; justify-content: center; gap: 15px; flex-shrink: 0;">
         <button onclick="toggleAdmin()" style="padding:15px 25px; border-radius:15px; background:white; border:3px solid var(--main-brown); font-weight:bold; font-size:1.1em; cursor:pointer;">🛠️ 商品管理 / 統計</button>
         <button onclick="toggleHistory()" style="padding:15px 25px; border-radius:15px; background:var(--accent-brown); color:white; border:none; font-weight:bold; font-size:1.1em; cursor:pointer;">📜 歷史紀錄 / 退貨</button>
     </div>
@@ -183,7 +223,6 @@
 </div>
 
 <script>
-    // --- 1. 登密碼鎖功能 ---
     const SYSTEM_PASSWORD = "0209"; 
 
     function checkPassword() {
@@ -316,7 +355,6 @@
         });
     }
 
-    // --- 2. 歷史紀錄顯示單筆淨利 ---
     function searchHistory(type) {
         let filter = "";
         if(type === 'day') {
