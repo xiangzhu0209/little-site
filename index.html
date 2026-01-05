@@ -10,7 +10,6 @@
     
     <style>
         :root { --main-brown: #b0a496; --bg-cream: #fcf8f5; --accent-brown: #8c7b6c; --price-red: #d9534f; --profit-green: #6b8e23; }
-        /* 初始隱藏 body 內容，防止密碼輸入前閃過內容 */
         body { font-family: sans-serif; background: var(--bg-cream); margin: 0; display: none; flex-direction: column; height: 100vh; color: #5d5246; overflow: hidden; }
         header { background: var(--main-brown); color: white; padding: 12px; text-align: center; font-size: 1.3em; font-weight: bold; flex-shrink: 0; }
         .nav-bar { background: #e8e0d9; padding: 10px; display: flex; gap: 10px; overflow-x: auto; border-bottom: 2px solid #d1c7bc; flex-shrink: 0; align-items: center; }
@@ -37,7 +36,7 @@
         .admin-layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 15px; flex: 1; overflow: hidden; }
         .add-row-top { background: #f0fdf4; padding: 15px; border: 2px solid var(--profit-green); border-radius: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
         .admin-table-container { overflow: auto; border: 1px solid #eee; border-radius: 8px; }
-        <table> width: 100%; border-collapse: collapse; }
+        table { width: 100%; border-collapse: collapse; } /* 此處已修正語法 */
         th { background: #f4f4f4; position: sticky; top: 0; padding: 10px; border: 1px solid #ddd; z-index: 5; }
         td { padding: 8px; border: 1px solid #ddd; text-align: center; }
         .del-x { color: red; font-weight: bold; cursor: pointer; font-size: 1.4em; }
@@ -185,14 +184,13 @@
     let hiddenOrderIds = []; 
     const ADMIN_PW = "0209"; // 鎖頻密碼
 
-    // --- 修改：開屏鎖頻功能 ---
     window.onload = function() {
         let accessGranted = false;
         while (!accessGranted) {
             const pw = prompt("🧸 歡迎來到 LITTLE NOOK POS\n請輸入解鎖密碼以顯示內容：");
             if (pw === ADMIN_PW) {
                 accessGranted = true;
-                document.body.style.display = "flex"; // 密碼正確，顯示網頁
+                document.body.style.display = "flex";
             } else if (pw === null) {
                 alert("必須輸入密碼才能使用系統。");
             } else {
@@ -207,8 +205,6 @@
         orders = data ? Object.keys(data).map(k => ({...data[k], firebaseKey: k})).reverse() : [];
         updateLog(); renderStatTable(); renderMonthStatTable();
     });
-
-    // 依照要求移除 checkAccess 密碼驗證邏輯
 
     function initUI() {
         const area = document.getElementById('item-area'), nav = document.getElementById('navbar');
@@ -328,6 +324,7 @@
                 });
                 document.getElementById('backdate-mode').checked = false;
                 document.getElementById('manual-date').style.display = 'none';
+                document.getElementById('cash-change').innerText = '0';
                 renderCart();
             })
             .catch(err => {
