@@ -82,7 +82,7 @@
 <div id="login-overlay">
     <h2 style="color:var(--main-brown)">🧸 LITTLE NOOK POS</h2>
     <input type="password" id="login-pw" placeholder="請輸入密碼" style="padding:15px; font-size:1.2em; border-radius:10px; border:2px solid var(--main-brown); text-align:center;">
-    <button onclick="checkLogin()" style="margin-top:15px; padding:10px 30px; background:var(--main-brown); color:white; border:none; border-radius:10px; font-size:1.1em; cursor:pointer;">登入系統</button>
+    <button onclick="checkLogin()" style="margin-top:15px; padding:10px 30px; background:var(--main-brown); color:white; border:none; border-radius:10px; font-size:1.1em; cursor:pointer;">進入系統</button>
 </div>
 
 <header>🧸 LITTLE NOOK POS (Pro 進階強化版)</header>
@@ -145,7 +145,7 @@
             <h3>➕ 新增商品</h3>
             <select id="add-item-cat" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px;"></select>
             <input type="text" id="new-item-n" placeholder="商品名稱" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ccc;">
-            <input type="number" id="new-item-c" placeholder="成本 (不顯示給客人)" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ccc;">
+            <input type="number" id="new-item-c" placeholder="成本" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ccc;">
             <input type="number" id="new-item-p" placeholder="販售價格" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ccc;">
             <input type="number" id="new-item-s" placeholder="初始庫存" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ccc;">
             <button onclick="addItem()" style="width:100%; padding:12px; background:var(--profit-green); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">確認新增</button>
@@ -156,19 +156,16 @@
 </div>
 
 <script>
-    // --- 密碼與系統設定 ---
-    const SYSTEM_PASSWORD = "1234"; // 您可以在這裡修改登入密碼
+    const SYSTEM_PASSWORD = "1234";
 
     function checkLogin() {
-        const input = document.getElementById('login-pw').value;
-        if(input === SYSTEM_PASSWORD) {
+        if(document.getElementById('login-pw').value === SYSTEM_PASSWORD) {
             document.getElementById('login-overlay').style.display = 'none';
         } else {
             alert("密碼錯誤！");
         }
     }
 
-    // Firebase 設定
     const firebaseConfig = {
         apiKey: "AIzaSyDn6HtjYMz_FFKU9xjhvV1xXYPr7t36UU0",
         authDomain: "little-nook-aad58.firebaseapp.com",
@@ -187,7 +184,6 @@
     let cart = []; 
     let currentPay = '現金';
 
-    // 監聽 Firebase
     db.ref('inventory').on('value', snap => { if(snap.val()) { inv = snap.val(); initUI(); renderAdminTable(); } });
     db.ref('orders').on('value', snap => {
         const data = snap.val();
@@ -195,7 +191,6 @@
         renderHistory();
     });
 
-    // --- 主介面渲染 ---
     function initUI() {
         const area = document.getElementById('item-area'), nav = document.getElementById('navbar');
         const catSelect = document.getElementById('add-item-cat');
@@ -208,31 +203,29 @@
             btn.innerText = cat.cat;
             btn.onclick = () => document.getElementById(`c${idx}`).scrollIntoView({behavior: 'smooth'});
             nav.appendChild(btn);
-
             catSelect.innerHTML += `<option value="${idx}">${cat.cat}</option>`;
             
-            let gridHtml = `<div class="cat-title" id="c${idx}">${cat.cat}</div><div class="product-grid">`;
-            (cat.items || []).forEach(it => {
-                gridHtml += `<div class="p-btn" onclick="addCart('${it.id}')">
-                    <div class="p-name">${it.n}</div>
-                    <div class="p-price">$${it.p}</div>
-                    <div class="p-stock">存:${it.s}</div>
-                </div>`;
-            });
-            area.innerHTML += gridHtml + '</div>';
+            // 隱藏 0 庫存邏輯：過濾 items
+            const availableItems = (cat.items || []).filter(it => it.s > 0);
+            
+            if(availableItems.length > 0) {
+                let gridHtml = `<div class="cat-title" id="c${idx}">${cat.cat}</div><div class="product-grid">`;
+                availableItems.forEach(it => {
+                    gridHtml += `<div class="p-btn" onclick="addCart('${it.id}')">
+                        <div class="p-name">${it.n}</div>
+                        <div class="p-price">$${it.p}</div>
+                        <div class="p-stock">存:${it.s}</div>
+                    </div>`;
+                });
+                area.innerHTML += gridHtml + '</div>';
+            }
         });
     }
 
-    // --- 購物車邏輯 ---
     function addCart(id) {
         let target = null;
         inv.forEach(c => (c.items || []).forEach(i => { if(i.id === id) target = i; }));
-        if(target && target.s > 0) { 
-            cart.push({...target}); 
-            renderCart(); 
-        } else {
-            alert("庫存不足！");
-        }
+        if(target && target.s > 0) { cart.push({...target}); renderCart(); }
     }
 
     function renderCart() {
@@ -247,30 +240,25 @@
     }
 
     function removeFromCart(index) { cart.splice(index, 1); renderCart(); }
-
     function calc() {
         const subtotal = cart.reduce((a, b) => a + b.p, 0);
         const disc = Number(document.getElementById('discount').value || 0);
         document.getElementById('final-total').innerText = Math.max(0, subtotal - disc);
         calcChange();
     }
-
     function calcChange() {
         const t = Number(document.getElementById('final-total').innerText);
         const p = Number(document.getElementById('cash-in').value || 0);
         document.getElementById('cash-change').innerText = p > t ? p - t : 0;
     }
-
     function setPay(m) {
         currentPay = m;
         document.getElementById('btn-cash').classList.toggle('active', m === '現金');
         document.getElementById('btn-elec').classList.toggle('active', m === '電支');
     }
 
-    // --- 結帳與利潤計算 ---
     function submitOrder() {
         if(!cart.length) return alert("購物車是空的");
-        
         const total = Number(document.getElementById('final-total').innerText);
         const totalCost = cart.reduce((a, b) => a + (Number(b.c) || 0), 0);
         const profit = total - totalCost;
@@ -279,7 +267,7 @@
             t: new Date().toLocaleTimeString(),
             d: new Date().toLocaleDateString('zh-TW'),
             total: total,
-            profit: profit, // 紀錄此單利潤
+            profit: profit,
             pay: currentPay,
             items: [...cart],
             note: document.getElementById('discount-note').value
@@ -299,7 +287,6 @@
             });
     }
 
-    // --- 管理面板邏輯 ---
     function renderAdminTable() {
         let html = '';
         inv.forEach((cat, ci) => {
@@ -359,7 +346,6 @@
         }
     }
 
-    // --- 歷史紀錄渲染 ---
     function renderHistory() {
         const list = document.getElementById('history-list');
         list.innerHTML = orders.map(o => `
