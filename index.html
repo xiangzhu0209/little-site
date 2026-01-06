@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🧸 LITTLE NOOK POS (Pro 最終整合版)</title>
+    <title>🧸 LITTLE NOOK POS </title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -473,17 +473,27 @@
     }
 
     function addNewProduct() {
-        const catN = document.getElementById('select-cat').value;
-        const id = document.getElementById('new-id').value, n = document.getElementById('new-n').value;
-        const c = Number(document.getElementById('new-c').value), p = Number(document.getElementById('new-p').value), s = Number(document.getElementById('new-s').value);
+        const catSelect = document.getElementById('select-cat');
+        const catN = catSelect.value;
+        const idInput = document.getElementById('new-id');
+        const nInput = document.getElementById('new-n');
+        const cInput = document.getElementById('new-c');
+        const pInput = document.getElementById('new-p');
+        const sInput = document.getElementById('new-s');
+
+        const id = idInput.value, n = nInput.value;
+        const c = Number(cInput.value), p = Number(pInput.value), s = Number(sInput.value);
+
         if(!n || !catN) return alert("請填寫品名與分類");
         const category = inv.find(v => v.cat === catN);
         if(category) {
             if(!category.items) category.items = [];
             category.items.push({id, n, c, p, s});
             db.ref('inventory').set(inv).then(() => {
-                alert("已新增");
-                ['new-id','new-n','new-c','new-p','new-s'].forEach(f => document.getElementById(f).value='');
+                // 修正：不跳 alert 以免中斷節奏，並保留分類選項
+                [idInput, nInput, cInput, pInput, sInput].forEach(f => f.value = '');
+                idInput.focus(); // 自動聚焦回代碼欄位，方便連打
+                console.log("已新增商品至：" + catN);
             });
         }
     }
@@ -498,7 +508,11 @@
 
     function updateCatSelect() {
         const sel = document.getElementById('select-cat');
-        if(sel) sel.innerHTML = inv.map(c => `<option value="${c.cat}">${c.cat}</option>`).join('') + `<option value="ADD">➕ 新增分類</option>`;
+        if(sel) {
+            const currentVal = sel.value; // 記住當前選中的分類
+            sel.innerHTML = inv.map(c => `<option value="${c.cat}">${c.cat}</option>`).join('') + `<option value="ADD">➕ 新增分類</option>`;
+            if(currentVal) sel.value = currentVal; // 更新選單內容後把分類選回來
+        }
     }
 
     function jumpToAdminCat(val) { if(val) document.getElementById(val).scrollIntoView({behavior: "smooth"}); }
@@ -506,7 +520,6 @@
     function renderAdminTable() {
         let html = '';
         inv.forEach((cat, ci) => {
-            // 修正：表格跨欄改為 7 欄
             html += `<tr id="ac${ci}" style="background:#eee;"><td colspan="7" style="text-align:left; padding:10px;"><b>📂 ${cat.cat}</b></td></tr>`;
             (cat.items || []).forEach((it, ii) => {
                 html += `<tr>
@@ -523,7 +536,6 @@
         document.getElementById('admin-tbody').innerHTML = html;
     }
 
-    // 修正：editItem 邏輯，確保 id 與 n 存為字串，其餘轉數字
     function editItem(ci, ii, k, v) { 
         inv[ci].items[ii][k] = (k==='n' || k==='id' ? v : Number(v)); 
         db.ref('inventory').set(inv); 
