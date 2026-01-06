@@ -9,7 +9,23 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <style>
-        :root { --main-brown: #b0a496; --bg-cream: #fcf8f5; --accent-brown: #8c7b6c; --price-red: #d9534f; --profit-green: #6b8e23; }
+    :root { 
+        --main-brown: #ff85a2;      /* 變成甜美草莓粉 */
+        --bg-cream: #fffafb;        /* 變成粉奶油白 */
+        --accent-brown: #ffb3c1;    /* 變成淺櫻花粉 */
+        --price-red: #ff5e78;       /* 變成亮麗粉紅 */
+        --profit-green: #90be6d;    /* 變成柔和草綠 */
+    }
+
+    /* 額外小優化：讓按鈕跟邊框更圓潤可愛 */
+    .p-btn, .nav-btn, .login-card, .login-input, .login-btn { 
+        border-radius: 15px !important; 
+    }
+    
+    header {
+        background: linear-gradient(135deg, #ff85a2 0%, #ffb3c1 100%) !important;
+        letter-spacing: 2px;
+    }
         
         /* 密碼登入層樣式 */
         #login-overlay {
