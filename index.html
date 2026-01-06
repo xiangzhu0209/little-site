@@ -10,22 +10,57 @@
     
     <style>
     :root { 
-        --main-brown: #ff85a2;      /* 變成甜美草莓粉 */
-        --bg-cream: #fffafb;        /* 變成粉奶油白 */
-        --accent-brown: #ffb3c1;    /* 變成淺櫻花粉 */
-        --price-red: #ff5e78;       /* 變成亮麗粉紅 */
-        --profit-green: #90be6d;    /* 變成柔和草綠 */
+        /* 換成高級感的乾燥玫瑰與奶油粉 */
+        --main-brown: #e5b3bb;      /* 莫蘭迪粉：柔和不刺眼 */
+        --bg-cream: #fdf8f7;        /* 暖奶油色背景 */
+        --accent-brown: #d4a5ab;    /* 深一點的乾燥玫瑰 */
+        --price-red: #cc8b8b;       /* 柔和的紅豆沙色 */
+        --profit-green: #a7c0a0;    /* 灰綠色 */
+        --text-color: #7a6668;      /* 深可可色，比黑溫柔 */
     }
 
-    /* 額外小優化：讓按鈕跟邊框更圓潤可愛 */
-    .p-btn, .nav-btn, .login-card, .login-input, .login-btn { 
-        border-radius: 15px !important; 
+    /* 設定全局圓體 */
+    * {
+        font-family: "Quicksand", "Yu Gothic", "Meiryo", "PingFang TC", "Microsoft JhengHei", "微軟正黑體", sans-serif;
     }
-    
-    header {
-        background: linear-gradient(135deg, #ff85a2 0%, #ffb3c1 100%) !important;
-        letter-spacing: 2px;
+
+    body { 
+        background: var(--bg-cream); 
+        color: var(--text-color);
+        font-weight: 500; /* 讓圓體看起來更飽滿一點 */
     }
+
+    header { 
+        background: var(--main-brown) !important;
+        color: white; 
+        padding: 15px; 
+        font-size: 1.4em;
+        letter-spacing: 3px;
+        border-bottom: 2px solid #dec0c0;
+    }
+
+    /* 讓按鈕變得圓滾滾的 */
+    .nav-btn, .p-btn, .login-card, .login-input, .login-btn, .card, input, select { 
+        border-radius: 20px !important; 
+        border: 1px solid #eee;
+    }
+
+    .p-btn {
+        background: white;
+        box-shadow: 2px 2px 10px rgba(229, 179, 187, 0.2);
+    }
+
+    .cat-title {
+        color: var(--accent-brown);
+        border-left: 5px solid var(--accent-brown);
+        background: #fff0f1;
+        border-radius: 5px;
+    }
+
+    /* 登入介面特別優化 */
+    #login-overlay { background: var(--bg-cream); }
+    .login-card { border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+</style>
         
         /* 密碼登入層樣式 */
         #login-overlay {
