@@ -107,6 +107,7 @@
         <input type="password" id="auth-pass" class="login-input" placeholder="密碼">
         <br>
         <button class="login-btn" onclick="handleAuthLogin()">登入驗證</button>
+        <p style="font-size: 0.8em; color: white; margin-top: 10px;">(模式：關閉分頁或重整即登出)</p>
     </div>
 </div>
 
@@ -260,7 +261,7 @@
             // 已通過 Email 驗證
             authOverlay.style.display = 'none';
             loginOverlay.style.display = 'flex';
-            // 只有登入後才開始啟動監聽資料庫，防止未登入者抓到資料
+            // 只有登入後才開始啟動監聽資料庫
             startSystem(); 
         } else {
             // 未登入
@@ -274,7 +275,14 @@
         const email = document.getElementById('auth-email').value.trim();
         const pass = document.getElementById('auth-pass').value;
         if (!email || !pass) return alert("請填寫 Email 與密碼");
-        auth.signInWithEmailAndPassword(email, pass).catch(err => alert("登入失敗：" + err.message));
+
+        // ★關鍵修正：設定 Persistence.SESSION
+        // 這會讓登入狀態只維持在目前的「工作階段」。關閉分頁或視窗後，就需要重新登入。
+        auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
+            .then(() => {
+                return auth.signInWithEmailAndPassword(email, pass);
+            })
+            .catch(err => alert("登入失敗：" + err.message));
     }
 
     function checkLogin() {
@@ -286,6 +294,29 @@
             document.getElementById('pw-input').value = '';
         }
     }
+
+    // ★額外安全加強：15分鐘無操作自動登出
+    let inactivityTime = function () {
+        let time;
+        // 監聽各種操作來重置計時器
+        window.onload = resetTimer;
+        document.onmousemove = resetTimer;
+        document.onkeypress = resetTimer;
+        document.onclick = resetTimer;
+
+        function logout() {
+            // 逾時登出
+            auth.signOut().then(() => location.reload());
+        }
+
+        function resetTimer() {
+            clearTimeout(time);
+            // 設定 15 分鐘 (900000 毫秒)
+            time = setTimeout(logout, 900000);
+        }
+    };
+    inactivityTime();
+
 
     function startSystem() {
         // 從資料庫同步庫存
