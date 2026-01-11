@@ -18,16 +18,15 @@
         --profit-green:#7a6668 ;    /* 柔和草綠 */
     }
 
-    /* 核心安全 CSS：預設隱藏主介面 */
+    /* 預設隱藏主介面 */
     header, .nav-bar, .main-content, .card-actions { display: none; }
     
-    /* 解鎖後顯示介面 */
+    /* 解鎖後顯示 */
     body.unlocked header { display: block; }
     body.unlocked .nav-bar { display: flex; }
     body.unlocked .main-content { display: flex; }
     body.unlocked .card-actions { display: flex; }
 
-    /* UI 優化 */
     .p-btn, .nav-btn, .login-card, .login-input, .login-btn { border-radius: 15px !important; }
     
     header {
@@ -35,7 +34,6 @@
         letter-spacing: 2px; color: white; padding: 12px; text-align: center; font-size: 1.3em; font-weight: bold; flex-shrink: 0;
     }
         
-    /* 登入層樣式 */
     #auth-overlay, #login-overlay {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
         background: var(--bg-cream); display: flex; flex-direction: column;
@@ -43,10 +41,7 @@
     }
     #auth-overlay { background: var(--main-brown); }
 
-    .login-card {
-        background: white; padding: 30px; border-radius: 20px; 
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; border: 2px solid var(--main-brown);
-    }
+    .login-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; border: 2px solid var(--main-brown); }
     .login-input { font-size: 1.1em; width: 220px; text-align: center; border: 2px solid #ddd; border-radius: 10px; padding: 10px; margin: 10px 0; }
     .pw-input { font-size: 2em; width: 150px; text-align: center; border: 2px solid #ddd; border-radius: 10px; padding: 10px; margin: 20px 0; letter-spacing: 5px; }
     .login-btn { background: var(--main-brown); color: white; border: none; padding: 12px 30px; border-radius: 10px; font-size: 1.2em; cursor: pointer; }
@@ -75,6 +70,10 @@
     #admin-panel, #history-panel { position: fixed; inset: 10px; background: white; z-index: 1000; border-radius: 20px; display: none; flex-direction: column; padding: 15px; border: 3px solid var(--main-brown); box-shadow: 0 0 50px rgba(0,0,0,0.3); }
     .admin-layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 15px; flex: 1; overflow: hidden; }
     .add-row-top { background: #f0fdf4; padding: 15px; border: 2px solid var(--profit-green); border-radius: 15px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+    
+    /* ★修改處 1：讓後台輸入框變高、字體變大 */
+    .add-row-top input, .add-row-top select { font-size: 1.2em; padding: 12px; border: 2px solid #ccc; border-radius: 8px; }
+    
     .admin-table-container { overflow: auto; border: 1px solid #eee; border-radius: 8px; }
     table { width: 100%; border-collapse: collapse; }
     th { background: #f4f4f4; position: sticky; top: 0; padding: 10px; border: 1px solid #ddd; z-index: 5; }
@@ -188,15 +187,17 @@
             <button onclick="toggleAdmin()" style="padding:8px 15px;">✕ 關閉</button>
         </div>
     </div>
+    
     <div class="add-row-top">
         <div><label>分類</label><select id="select-cat" onchange="checkNewCat(this.value)" style="width:130px;"></select></div>
-        <div><label>代碼</label><input type="text" id="new-id" style="width:80px;" placeholder="代碼"></div>
-        <div><label>品名</label><input type="text" id="new-n" style="width:250px;" placeholder="品名"></div>
-        <div><label>成本</label><input type="number" id="new-c" style="width:80px;" placeholder="成本"></div>
-        <div><label>售價</label><input type="number" id="new-p" style="width:80px;" placeholder="售價"></div>
-        <div><label>庫存</label><input type="number" id="new-s" style="width:80px;" placeholder="庫存"></div>
+        <div><label>代碼</label><input type="text" id="new-id" style="width:120px;" placeholder="代碼"></div>
+        <div><label>品名</label><input type="text" id="new-n" style="width:400px;" placeholder="請輸入完整品名"></div>
+        <div><label>成本</label><input type="number" id="new-c" style="width:120px;" placeholder="成本"></div>
+        <div><label>售價</label><input type="number" id="new-p" style="width:120px;" placeholder="售價"></div>
+        <div><label>庫存</label><input type="number" id="new-s" style="width:120px;" placeholder="數量"></div>
         <button onclick="addNewProduct()" style="background:var(--profit-green); color:white; border:none; padding:10px 25px; border-radius:8px; cursor:pointer; font-weight:bold;">➕ 新增商品</button>
     </div>
+
     <div class="admin-layout">
         <div class="admin-table-container">
             <table>
@@ -335,7 +336,7 @@
             <div class="cart-item"><span>${it.id} ${it.n}</span><b>$${it.p}</b>
             <span onclick="cart.splice(${i},1);renderCart()" style="color:red; cursor:pointer;">✕</span></div>`).join('');
         
-        // ★功能更新：顯示數量
+        // 更新數量
         const countEl = document.getElementById('cart-count');
         if(countEl) countEl.innerText = `(共 ${cart.length} 項)`;
         
@@ -371,8 +372,6 @@
         }
         const total = Number(document.getElementById('final-total').innerText);
         const cost = cart.reduce((a,b)=>a+(b.c||0), 0);
-        
-        // ★功能更新：儲存利潤
         const orderData = {
             t: orderTime, d: orderDate, total, profit: total - cost, 
             pay: currentPay, items: [...cart], 
@@ -480,7 +479,6 @@
         document.getElementById('stat-month-tbody').innerHTML = Object.keys(sum).sort((a,b)=>sum[b].c - sum[a].c).map(n => `<tr><td>${n}</td><td>${sum[n].c}</td><td>$${sum[n].t}</td></tr>`).join('') || '無數據';
     }
 
-    // ★修改：利潤顯示
     function searchHistory(type) {
         let filter = "";
         if(type === 'day') {
@@ -517,8 +515,15 @@
     }
 
     function updateLog() {
-        document.getElementById('order-log').innerHTML = '<strong>最近交易</strong><hr>' + 
-            orders.slice(0,8).map(o => `<div><b>$${o.total}</b> <small>(${o.t})</small></div>`).join('');
+        document.getElementById('order-log').innerHTML = '<strong>📋 最近交易</strong><hr>' + 
+            orders.slice(0,8).map(o => `
+            <div style="border-bottom:1px solid #eee; padding:5px 0;">
+                <div style="display:flex; justify-content:space-between;">
+                    <span><b>$${o.total}</b> <small>(${o.t})</small></span>
+                    <span onclick="refundOrder('${o.firebaseKey}')" style="cursor:pointer; color:red;">✕</span>
+                </div>
+                <div style="font-size:0.8em; color:#666;">${o.items.map(i=>i.n).join(', ')}</div>
+            </div>`).join('');
     }
 
     function exportToExcel() {
