@@ -203,9 +203,31 @@
 
     // 第一層：Firebase Auth 登入
     function handleAuthLogin() {
-        const email = document.getElementById('auth-email').value;
+        const email = document.getElementById('auth-email').value.trim();
         const pass = document.getElementById('auth-pass').value;
-        auth.signInWithEmailAndPassword(email, pass).catch(err => alert("身分驗證失敗：" + err.message));
+        
+        if (!email || !pass) {
+            alert("請填寫 Email 與密碼");
+            return;
+        }
+
+        auth.signInWithEmailAndPassword(email, pass)
+            .then(() => {
+                console.log("驗證通過！");
+            })
+            .catch(err => {
+                console.error(err);
+                // 這裡會告訴你為什麼失敗
+                if (err.code === 'auth/operation-not-allowed') {
+                    alert("⚠️ 登入功能未開啟！請去 Firebase 後台的 Authentication > Sign-in method 把 'Email/Password' 打開。");
+                } else if (err.code === 'auth/wrong-password') {
+                    alert("❌ 密碼錯誤，請再試一次。");
+                } else if (err.code === 'auth/user-not-found') {
+                    alert("❌ 找不到此帳號，請確認 Email 是否輸入正確。");
+                } else {
+                    alert("🚫 登入失敗：" + err.message);
+                }
+            });
     }
 
     // 監聽 Firebase 登入狀態
