@@ -18,10 +18,8 @@
         --profit-green:#7a6668 ;    /* 柔和草綠 */
     }
 
-    /* 預設隱藏主介面 */
     header, .nav-bar, .main-content, .card-actions { display: none; }
     
-    /* 解鎖後顯示 */
     body.unlocked header { display: block; }
     body.unlocked .nav-bar { display: flex; }
     body.unlocked .main-content { display: flex; }
@@ -71,7 +69,7 @@
     .admin-layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 15px; flex: 1; overflow: hidden; }
     .add-row-top { background: #f0fdf4; padding: 15px; border: 2px solid var(--profit-green); border-radius: 15px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
     
-    /* ★修改處 1：讓後台輸入框變高、字體變大 */
+    /* 大格子樣式 */
     .add-row-top input, .add-row-top select { font-size: 1.2em; padding: 12px; border: 2px solid #ccc; border-radius: 8px; }
     
     .admin-table-container { overflow: auto; border: 1px solid #eee; border-radius: 8px; }
@@ -221,7 +219,6 @@
 </div>
 
 <script>
-    // --- Firebase 配置 ---
     const firebaseConfig = {
         apiKey: "AIzaSyDn6HtjYMz_FFKU9xjhvV1xXYPr7t36UU0",
         authDomain: "little-nook-aad58.firebaseapp.com",
@@ -240,7 +237,6 @@
     let currentPay = '現金'; 
     const ADMIN_PW = "0209";
 
-    // --- 安全驗證核心邏輯 ---
     auth.onAuthStateChanged(user => {
         const authOverlay = document.getElementById('auth-overlay');
         const loginOverlay = document.getElementById('login-overlay');
@@ -336,7 +332,6 @@
             <div class="cart-item"><span>${it.id} ${it.n}</span><b>$${it.p}</b>
             <span onclick="cart.splice(${i},1);renderCart()" style="color:red; cursor:pointer;">✕</span></div>`).join('');
         
-        // 更新數量
         const countEl = document.getElementById('cart-count');
         if(countEl) countEl.innerText = `(共 ${cart.length} 項)`;
         
@@ -402,10 +397,13 @@
     function toggleAdmin() { document.getElementById('admin-panel').style.display = (document.getElementById('admin-panel').style.display==='flex'?'none':'flex'); if(document.getElementById('admin-panel').style.display==='flex') renderAdminTable(); }
     function toggleHistory() { document.getElementById('history-panel').style.display = (document.getElementById('history-panel').style.display==='flex'?'none':'flex'); }
 
+    // ★ 修改：加入改名連結
     function renderAdminTable() {
         let html = '';
         inv.forEach((cat, ci) => {
-            html += `<tr id="ac${ci}" style="background:#eee;"><td colspan="7" style="text-align:left;"><b>📂 ${cat.cat}</b></td></tr>`;
+            html += `<tr id="ac${ci}" style="background:#eee;"><td colspan="7" style="text-align:left;">
+                <b>📂 <span onclick="renameCat(${ci})" style="cursor:pointer; text-decoration:underline;" title="點擊修改名稱">${cat.cat}</span></b>
+            </td></tr>`;
             (cat.items || []).forEach((it, ii) => {
                 html += `<tr>
                     <td><span onclick="move(${ci},${ii},-1)" style="cursor:pointer">↑</span> <span onclick="move(${ci},${ii},1)" style="cursor:pointer">↓</span></td>
@@ -419,6 +417,18 @@
             });
         });
         document.getElementById('admin-tbody').innerHTML = html;
+    }
+
+    // ★ 新增：改名功能
+    function renameCat(ci) {
+        const newName = prompt("修改分類名稱：", inv[ci].cat);
+        if(newName && newName !== inv[ci].cat) {
+            inv[ci].cat = newName;
+            db.ref('inventory').set(inv).then(() => {
+                initUI(); // 刷新前台
+                renderAdminTable(); // 刷新後台
+            });
+        }
     }
 
     function editItem(ci, ii, k, v) { inv[ci].items[ii][k] = (k==='n'||k==='id'?v:Number(v)); db.ref('inventory').set(inv); }
@@ -514,8 +524,9 @@
         }
     }
 
+    // ★ 修改：加入一鍵清除顯示
     function updateLog() {
-        document.getElementById('order-log').innerHTML = '<strong>📋 最近交易</strong><hr>' + 
+        document.getElementById('order-log').innerHTML = '<strong>📋 最近交易 <button onclick="clearLogDisplay()" style="float:right;font-size:0.8em;border-radius:5px;border:1px solid #ccc;cursor:pointer;">🗑️ 清空顯示</button></strong><hr>' + 
             orders.slice(0,8).map(o => `
             <div style="border-bottom:1px solid #eee; padding:5px 0;">
                 <div style="display:flex; justify-content:space-between;">
@@ -524,6 +535,11 @@
                 </div>
                 <div style="font-size:0.8em; color:#666;">${o.items.map(i=>i.n).join(', ')}</div>
             </div>`).join('');
+    }
+    
+    // ★ 新增：清除顯示功能
+    function clearLogDisplay() {
+        document.getElementById('order-log').innerHTML = '<strong>📋 最近交易</strong><hr><div style="text-align:center;color:#999;padding:20px;">已隱藏最近交易</div>';
     }
 
     function exportToExcel() {
