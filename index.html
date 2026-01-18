@@ -199,7 +199,7 @@
     <div class="admin-layout">
         <div class="admin-table-container">
             <table>
-                <thead><tr><th>順序</th><th>代碼</th><th>品名</th><th>成本</th><th>售價</th><th>庫存</th><th>刪</th></tr></thead>
+                <thead><tr><th>順序</th><th>代碼</th><th>品名</th><th>成本</th><th>售價</th><th>庫存</th><th>操作</th></tr></thead>
                 <tbody id="admin-tbody"></tbody>
             </table>
         </div>
@@ -397,7 +397,7 @@
     function toggleAdmin() { document.getElementById('admin-panel').style.display = (document.getElementById('admin-panel').style.display==='flex'?'none':'flex'); if(document.getElementById('admin-panel').style.display==='flex') renderAdminTable(); }
     function toggleHistory() { document.getElementById('history-panel').style.display = (document.getElementById('history-panel').style.display==='flex'?'none':'flex'); }
 
-    // ★ 修改：整合分類移動按鈕
+    // ★ 修改：整合分類移動與複製功能
     function renderAdminTable() {
         let html = '';
         inv.forEach((cat, ci) => {
@@ -418,14 +418,33 @@
                     <td><input type="number" value="${it.c}" onchange="editItem(${ci},${ii},'c',this.value)" style="width:50px;"></td>
                     <td><input type="number" value="${it.p}" onchange="editItem(${ci},${ii},'p',this.value)" style="width:50px;"></td>
                     <td><input type="number" value="${it.s}" onchange="editItem(${ci},${ii},'s',this.value)" style="width:50px;"></td>
-                    <td><span onclick="delP(${ci},${ii})" class="del-x">✕</span></td>
+                    <td>
+                        <span onclick="copyP(${ci},${ii})" style="cursor:pointer; margin-right:10px; font-size:1.2em;" title="複製此商品">📋</span>
+                        <span onclick="delP(${ci},${ii})" class="del-x" title="刪除">✕</span>
+                    </td>
                 </tr>`;
             });
         });
         document.getElementById('admin-tbody').innerHTML = html;
     }
 
-    // ★ 新增：移動分類排序邏輯
+    // ★ 新增：複製商品功能
+    function copyP(ci, ii) {
+        const item = inv[ci].items[ii];
+        const newItem = {
+            id: item.id,       // 保持原ID (方便使用者自己改成 A1 -> A2)
+            n: item.n + " (複製)", // 標記名稱
+            c: item.c,         // 複製成本
+            p: item.p,         // 複製售價
+            s: 0               // 庫存歸零 (安全起見)
+        };
+        inv[ci].items.splice(ii + 1, 0, newItem); // 插入到下一行
+        db.ref('inventory').set(inv).then(() => {
+             renderAdminTable();
+             initUI();
+        });
+    }
+
     function moveCat(ci, dir) {
         if (ci + dir >= 0 && ci + dir < inv.length) {
             [inv[ci], inv[ci + dir]] = [inv[ci + dir], inv[ci]];
