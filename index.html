@@ -12,11 +12,11 @@
     <style>
     /* ★ 修改：莫蘭迪色系 (Morandi Palette) */
     :root { 
-        --main-brown: #b5a8a3;       /* 莫蘭迪-藕粉灰 (原：甜美草莓粉) */
-        --bg-cream: #f5f4f0;        /* 莫蘭迪-米灰白 (原：粉奶油白) */
-        --accent-brown: #e0d3cb;    /* 莫蘭迪-暖杏色 (原：淺櫻花粉) */
-        --price-red: #a97d73;       /* 莫蘭迪-磚紅陶 (原：亮麗粉紅) */
-        --profit-green: #8f9e8a ;   /* 莫蘭迪-灰豆綠 (原：柔和草綠) */
+        --main-brown: #b5a8a3;       /* 莫蘭迪-藕粉灰 */
+        --bg-cream: #f5f4f0;        /* 莫蘭迪-米灰白 */
+        --accent-brown: #e0d3cb;    /* 莫蘭迪-暖杏色 */
+        --price-red: #a97d73;       /* 莫蘭迪-磚紅陶 */
+        --profit-green: #8f9e8a ;   /* 莫蘭迪-灰豆綠 */
     }
 
     header, .nav-bar, .main-content, .card-actions { display: none; }
@@ -28,7 +28,6 @@
 
     .p-btn, .nav-btn, .login-card, .login-input, .login-btn { border-radius: 15px !important; }
     
-    /* ★ 修改：Header 漸層改為莫蘭迪色調 */
     header {
         background: linear-gradient(135deg, var(--main-brown) 0%, var(--accent-brown) 100%) !important;
         letter-spacing: 2px; color: white; padding: 12px; text-align: center; font-size: 1.3em; font-weight: bold; flex-shrink: 0;
@@ -50,14 +49,13 @@
     .nav-bar { background: #e8e0d9; padding: 10px; gap: 10px; overflow-x: auto; border-bottom: 2px solid #d1c7bc; flex-shrink: 0; align-items: center; }
     .nav-btn { background: white; border: 1px solid #d1c7bc; padding: 8px 18px; border-radius: 20px; white-space: nowrap; cursor: pointer; font-size: 1.1em; }
     .sync-btn { background: #ff9800; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; margin-left: auto; }
-    .main-content { flex: 1; overflow: hidden; padding: 10px; gap: 10px; }
+    .main-content { flex: 1; overflow: hidden; padding: 10px; gap: 10px; display: flex; flex-direction: column; } /* Flex column fix */
     .item-area { flex: 1.8; overflow-y: auto; background: white; border-radius: 15px; padding: 15px; border: 2px solid #e8e0d9; }
-    /* ★ 修改：分類標題背景色微調 */
     .cat-title { background: #f4f0ec; padding: 8px 15px; border-radius: 20px; margin: 15px 0 8px; font-weight: bold; border-left: 8px solid var(--main-brown); font-size: 1.2em; }
     .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 10px; }
     .p-btn { background: white; border: 1px solid #f0e6dd; border-radius: 12px; padding: 10px 5px; text-align: center; cursor: pointer; box-shadow: 2px 2px 0 #e8e0d9; min-height: 90px; display: flex; flex-direction: column; justify-content: center; }
     .p-name { font-size: 0.85em; font-weight: bold; margin-bottom: 5px; height: 2.8em; overflow: hidden; line-height: 1.4; }
-    .p-price { color: var(--price-red); font-size: 1.2em; font-weight: bold; } /* 使用變數 */
+    .p-price { color: var(--price-red); font-size: 1.2em; font-weight: bold; } 
     .p-stock { font-size: 0.8em; color: #999; }
     .checkout-area { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 320px; overflow-y: auto; }
     .card { background: white; border-radius: 15px; padding: 12px; border: 2px solid #e8e0d9; }
@@ -67,13 +65,11 @@
     .small-note { font-size: 1em; padding: 8px; width: 100%; border-radius: 8px; border: 1px solid #d1c7bc; box-sizing: border-box; margin-top: 5px; }
     .total-display { font-size: 3.2em; font-weight: bold; color: var(--price-red); text-align: right; margin: 10px 0; }
     .pay-btn { flex: 1; padding: 15px; border-radius: 10px; border: 1px solid #ccc; background: white; cursor: pointer; font-weight: bold; font-size: 1.3em;}
-    .pay-btn.active { background: var(--accent-brown); color: #5d5246; border-color: var(--accent-brown); } /* 文字顏色微調 */
+    .pay-btn.active { background: var(--accent-brown); color: #5d5246; border-color: var(--accent-brown); }
     #admin-panel, #history-panel { position: fixed; inset: 10px; background: white; z-index: 1000; border-radius: 20px; display: none; flex-direction: column; padding: 15px; border: 3px solid var(--main-brown); box-shadow: 0 0 50px rgba(0,0,0,0.3); }
     .admin-layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 15px; flex: 1; overflow: hidden; }
-    /* ★ 修改：新增商品區塊背景微調 */
     .add-row-top { background: #f2f7f2; padding: 15px; border: 2px solid var(--profit-green); border-radius: 15px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
     
-    /* 大格子樣式 */
     .add-row-top input, .add-row-top select { font-size: 1.2em; padding: 12px; border: 2px solid #ccc; border-radius: 8px; }
     
     .admin-table-container { overflow: auto; border: 1px solid #eee; border-radius: 8px; }
@@ -118,6 +114,13 @@
 </div>
 
 <div class="main-content">
+    
+    <div class="search-bar" style="margin-bottom:10px; display:flex;">
+        <input type="text" id="quick-find" placeholder="⌨️ 直接按數字鍵即可搜尋..." 
+               oninput="doSearch()" onkeydown="checkEnter(event)"
+               style="flex:1; padding:15px; font-size:1.2em; border:2px solid var(--main-brown); border-radius:12px; background:#fffcf5;">
+    </div>
+
     <div class="item-area" id="item-area">讀取資料中...</div>
     <div class="checkout-area">
         <div class="card">
@@ -383,6 +386,8 @@
             ['discount', 'discount-note', 'cash-in', 'manual-date'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('backdate-mode').checked = false;
             document.getElementById('manual-date').style.display = 'none';
+            document.getElementById('quick-find').value = ''; // 結帳完也清空搜尋
+            initUI(); // 還原畫面
             renderCart();
         }).catch(err => {
             localStorage.setItem('pendingOrder_' + Date.now(), JSON.stringify(orderData));
@@ -607,6 +612,66 @@
             }
         }
         alert(`成功同步 ${count} 筆離線訂單！`);
+    }
+
+    // ★ 新增：智慧速查邏輯
+    
+    // 1. 全域監聽：不用點輸入框，直接按數字鍵盤就會自動聚焦
+    document.addEventListener('keydown', function(e) {
+        // 如果正在輸入價格或備註，或是沒登入，就不攔截
+        if (!document.body.classList.contains('unlocked')) return;
+        if (e.target.tagName === 'INPUT' && e.target.id !== 'quick-find') return;
+        
+        // 如果按的是數字鍵或英文，且焦點不在搜尋框，自動跳過去
+        const isNumber = (e.key >= '0' && e.key <= '9');
+        const isChar = (e.key >= 'a' && e.key <= 'z');
+        if ((isNumber || isChar) && document.activeElement !== document.getElementById('quick-find')) {
+            document.getElementById('quick-find').focus();
+        }
+    });
+
+    // 2. 搜尋過濾功能
+    function doSearch() {
+        const val = document.getElementById('quick-find').value.toLowerCase().trim();
+        const area = document.getElementById('item-area');
+        
+        // 如果是空的，就恢復原本的分類顯示 (initUI)
+        if (!val) { 
+            initUI(); 
+            return; 
+        }
+
+        // 開始過濾
+        let html = `<div class="cat-title" style="background:var(--accent-brown); color:#5d5246;">🔍 搜尋結果: "${val}"</div><div class="product-grid">`;
+        let found = false;
+
+        inv.forEach(cat => {
+            (cat.items || []).forEach(it => {
+                // 搜尋 代碼(id) 或 品名(n)
+                if ((it.id && it.id.toLowerCase().includes(val)) || it.n.toLowerCase().includes(val)) {
+                    if(it.s > 0) {
+                        found = true;
+                        html += `<div class="p-btn" onclick="addCart('${it.id}')">
+                            <div class="p-name">${it.id} ${it.n}</div>
+                            <div class="p-price">$${it.p}</div>
+                            <div class="p-stock">存:${it.s}</div>
+                        </div>`;
+                    }
+                }
+            });
+        });
+        
+        if (!found) html += `<div style="padding:20px; color:#999;">找不到含有 "${val}" 的商品...</div>`;
+        area.innerHTML = html + '</div>';
+    }
+
+    // 3. 按 Enter 清空並還原
+    function checkEnter(e) {
+        if (e.key === 'Enter') {
+            document.getElementById('quick-find').value = ''; // 清空
+            document.getElementById('quick-find').blur();     // 取消聚焦(收起手機鍵盤)
+            initUI(); // 還原畫面
+        }
     }
 </script>
 </body>
