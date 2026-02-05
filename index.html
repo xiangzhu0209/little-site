@@ -10,7 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <style>
-    /* ★ 修改：莫蘭迪色系 (Morandi Palette) */
+    /* ★ 莫蘭迪色系 (Morandi Palette) */
     :root { 
         --main-brown: #b5a8a3;       /* 莫蘭迪-藕粉灰 */
         --bg-cream: #f5f4f0;        /* 莫蘭迪-米灰白 */
@@ -49,14 +49,23 @@
     .nav-bar { background: #e8e0d9; padding: 10px; gap: 10px; overflow-x: auto; border-bottom: 2px solid #d1c7bc; flex-shrink: 0; align-items: center; }
     .nav-btn { background: white; border: 1px solid #d1c7bc; padding: 8px 18px; border-radius: 20px; white-space: nowrap; cursor: pointer; font-size: 1.1em; }
     .sync-btn { background: #ff9800; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; margin-left: auto; }
-    .main-content { flex: 1; overflow: hidden; padding: 10px; gap: 10px; display: flex; flex-direction: column; } /* Flex column fix */
-    .item-area { flex: 1.8; overflow-y: auto; background: white; border-radius: 15px; padding: 15px; border: 2px solid #e8e0d9; }
+    
+    /* ★ 修正：確保主區塊是左右排列 (Row) */
+    .main-content { flex: 1; overflow: hidden; padding: 10px; gap: 10px; display: flex; flex-direction: row; }
+    
+    /* ★ 新增：左側區塊 (包含搜尋框+商品區) */
+    .left-section { flex: 1.8; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+
+    /* ★ 修改：item-area 改為填滿左側區塊 */
+    .item-area { flex: 1; overflow-y: auto; background: white; border-radius: 15px; padding: 15px; border: 2px solid #e8e0d9; }
+    
     .cat-title { background: #f4f0ec; padding: 8px 15px; border-radius: 20px; margin: 15px 0 8px; font-weight: bold; border-left: 8px solid var(--main-brown); font-size: 1.2em; }
     .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 10px; }
     .p-btn { background: white; border: 1px solid #f0e6dd; border-radius: 12px; padding: 10px 5px; text-align: center; cursor: pointer; box-shadow: 2px 2px 0 #e8e0d9; min-height: 90px; display: flex; flex-direction: column; justify-content: center; }
     .p-name { font-size: 0.85em; font-weight: bold; margin-bottom: 5px; height: 2.8em; overflow: hidden; line-height: 1.4; }
     .p-price { color: var(--price-red); font-size: 1.2em; font-weight: bold; } 
     .p-stock { font-size: 0.8em; color: #999; }
+    
     .checkout-area { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 320px; overflow-y: auto; }
     .card { background: white; border-radius: 15px; padding: 12px; border: 2px solid #e8e0d9; }
     #cart-list { max-height: 200px; overflow-y: auto; border-bottom: 2px dashed #e8e0d9; }
@@ -115,13 +124,14 @@
 
 <div class="main-content">
     
-    <div class="search-bar" style="margin-bottom:10px; display:flex;">
+    <div class="left-section">
         <input type="text" id="quick-find" placeholder="⌨️ 直接按數字鍵即可搜尋..." 
                oninput="doSearch()" onkeydown="checkEnter(event)"
-               style="flex:1; padding:15px; font-size:1.2em; border:2px solid var(--main-brown); border-radius:12px; background:#fffcf5;">
+               style="width:100%; padding:15px; font-size:1.2em; border:2px solid var(--main-brown); border-radius:12px; background:#fffcf5; box-sizing: border-box;">
+        
+        <div class="item-area" id="item-area">讀取資料中...</div>
     </div>
 
-    <div class="item-area" id="item-area">讀取資料中...</div>
     <div class="checkout-area">
         <div class="card">
             <strong>🛒 當前清單 <span id="cart-count" style="font-size:0.9em; color:var(--main-brown);">(共 0 項)</span></strong>
@@ -386,8 +396,8 @@
             ['discount', 'discount-note', 'cash-in', 'manual-date'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('backdate-mode').checked = false;
             document.getElementById('manual-date').style.display = 'none';
-            document.getElementById('quick-find').value = ''; // 結帳完也清空搜尋
-            initUI(); // 還原畫面
+            document.getElementById('quick-find').value = ''; 
+            initUI(); 
             renderCart();
         }).catch(err => {
             localStorage.setItem('pendingOrder_' + Date.now(), JSON.stringify(orderData));
@@ -614,15 +624,11 @@
         alert(`成功同步 ${count} 筆離線訂單！`);
     }
 
-    // ★ 新增：智慧速查邏輯
-    
-    // 1. 全域監聽：不用點輸入框，直接按數字鍵盤就會自動聚焦
+    // 智慧速查邏輯
     document.addEventListener('keydown', function(e) {
-        // 如果正在輸入價格或備註，或是沒登入，就不攔截
         if (!document.body.classList.contains('unlocked')) return;
         if (e.target.tagName === 'INPUT' && e.target.id !== 'quick-find') return;
         
-        // 如果按的是數字鍵或英文，且焦點不在搜尋框，自動跳過去
         const isNumber = (e.key >= '0' && e.key <= '9');
         const isChar = (e.key >= 'a' && e.key <= 'z');
         if ((isNumber || isChar) && document.activeElement !== document.getElementById('quick-find')) {
@@ -630,24 +636,20 @@
         }
     });
 
-    // 2. 搜尋過濾功能
     function doSearch() {
         const val = document.getElementById('quick-find').value.toLowerCase().trim();
         const area = document.getElementById('item-area');
         
-        // 如果是空的，就恢復原本的分類顯示 (initUI)
         if (!val) { 
             initUI(); 
             return; 
         }
 
-        // 開始過濾
         let html = `<div class="cat-title" style="background:var(--accent-brown); color:#5d5246;">🔍 搜尋結果: "${val}"</div><div class="product-grid">`;
         let found = false;
 
         inv.forEach(cat => {
             (cat.items || []).forEach(it => {
-                // 搜尋 代碼(id) 或 品名(n)
                 if ((it.id && it.id.toLowerCase().includes(val)) || it.n.toLowerCase().includes(val)) {
                     if(it.s > 0) {
                         found = true;
@@ -665,12 +667,11 @@
         area.innerHTML = html + '</div>';
     }
 
-    // 3. 按 Enter 清空並還原
     function checkEnter(e) {
         if (e.key === 'Enter') {
-            document.getElementById('quick-find').value = ''; // 清空
-            document.getElementById('quick-find').blur();     // 取消聚焦(收起手機鍵盤)
-            initUI(); // 還原畫面
+            document.getElementById('quick-find').value = ''; 
+            document.getElementById('quick-find').blur();     
+            initUI(); 
         }
     }
 </script>
