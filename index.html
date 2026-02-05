@@ -50,13 +50,9 @@
     .nav-btn { background: white; border: 1px solid #d1c7bc; padding: 8px 18px; border-radius: 20px; white-space: nowrap; cursor: pointer; font-size: 1.1em; }
     .sync-btn { background: #ff9800; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; margin-left: auto; }
     
-    /* ★ 修正：確保主區塊是左右排列 (Row) */
+    /* 左側區塊 (搜尋+商品) 與 右側區塊 (結帳) 並排 */
     .main-content { flex: 1; overflow: hidden; padding: 10px; gap: 10px; display: flex; flex-direction: row; }
-    
-    /* ★ 新增：左側區塊 (包含搜尋框+商品區) */
     .left-section { flex: 1.8; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
-
-    /* ★ 修改：item-area 改為填滿左側區塊 */
     .item-area { flex: 1; overflow-y: auto; background: white; border-radius: 15px; padding: 15px; border: 2px solid #e8e0d9; }
     
     .cat-title { background: #f4f0ec; padding: 8px 15px; border-radius: 20px; margin: 15px 0 8px; font-weight: bold; border-left: 8px solid var(--main-brown); font-size: 1.2em; }
@@ -126,7 +122,7 @@
     
     <div class="left-section">
         <input type="text" id="quick-find" placeholder="⌨️ 直接按數字鍵即可搜尋..." 
-               oninput="doSearch()" onkeydown="checkEnter(event)"
+               oninput="doSearch()"
                style="width:100%; padding:15px; font-size:1.2em; border:2px solid var(--main-brown); border-radius:12px; background:#fffcf5; box-sizing: border-box;">
         
         <div class="item-area" id="item-area">讀取資料中...</div>
@@ -624,9 +620,27 @@
         alert(`成功同步 ${count} 筆離線訂單！`);
     }
 
-    // 智慧速查邏輯
+    // ★ 修正：全域 Enter 監聽 (不管有沒有點選其他地方，按 Enter 都會清空搜尋)
     document.addEventListener('keydown', function(e) {
         if (!document.body.classList.contains('unlocked')) return;
+
+        // 邏輯1: 處理 Enter 清除搜尋
+        if (e.key === 'Enter') {
+            // 如果焦點在其他輸入框(例如金額)，不要清空搜尋
+            if (e.target.tagName === 'INPUT' && e.target.id !== 'quick-find') return;
+            
+            const searchBox = document.getElementById('quick-find');
+            // 只要搜尋框有字，按 Enter 就清空並還原
+            if (searchBox && searchBox.value) {
+                searchBox.value = '';
+                searchBox.blur(); // 移除焦點(手機收鍵盤)
+                initUI();
+                e.preventDefault(); // 避免觸發其他預設行為
+            }
+            return; // 結束，不再執行下方自動聚焦
+        }
+
+        // 邏輯2: 自動聚焦 (打字直接搜尋)
         if (e.target.tagName === 'INPUT' && e.target.id !== 'quick-find') return;
         
         const isNumber = (e.key >= '0' && e.key <= '9');
@@ -636,6 +650,7 @@
         }
     });
 
+    // 搜尋功能
     function doSearch() {
         const val = document.getElementById('quick-find').value.toLowerCase().trim();
         const area = document.getElementById('item-area');
@@ -665,14 +680,6 @@
         
         if (!found) html += `<div style="padding:20px; color:#999;">找不到含有 "${val}" 的商品...</div>`;
         area.innerHTML = html + '</div>';
-    }
-
-    function checkEnter(e) {
-        if (e.key === 'Enter') {
-            document.getElementById('quick-find').value = ''; 
-            document.getElementById('quick-find').blur();     
-            initUI(); 
-        }
     }
 </script>
 </body>
