@@ -50,7 +50,7 @@
     .nav-btn { background: white; border: 1px solid #d1c7bc; padding: 8px 18px; border-radius: 20px; white-space: nowrap; cursor: pointer; font-size: 1.1em; }
     .sync-btn { background: #ff9800; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; margin-left: auto; }
     
-    /* 左側區塊 (搜尋+商品) 與 右側區塊 (結帳) 並排 */
+    /* 版面配置：左搜尋+商品，右結帳 */
     .main-content { flex: 1; overflow: hidden; padding: 10px; gap: 10px; display: flex; flex-direction: row; }
     .left-section { flex: 1.8; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
     .item-area { flex: 1; overflow-y: auto; background: white; border-radius: 15px; padding: 15px; border: 2px solid #e8e0d9; }
@@ -155,7 +155,7 @@
                 <input type="date" id="manual-date" style="display:none; margin-left:10px; padding:5px; border:1px solid #ccc; border-radius:5px;">
             </div>
 
-            <button onclick="submitOrder()" style="width:100%; padding:20px; margin-top:15px; background:var(--profit-green); color:white; border:none; border-radius:15px; font-weight:bold; font-size:1.6em;">結帳完成</button>
+            <button onclick="submitOrder()" style="width:100%; padding:20px; margin-top:15px; background:var(--profit-green); color:white; border:none; border-radius:15px; font-weight:bold; font-size:1.6em;">結帳完成 (Ctrl)</button>
         </div>
         <div class="card" style="flex:1; font-size: 1em;" id="order-log"></div>
     </div>
@@ -395,6 +395,8 @@
             document.getElementById('quick-find').value = ''; 
             initUI(); 
             renderCart();
+            // ★ 新增：結帳後自動聚焦回搜尋框，準備下一筆
+            document.getElementById('quick-find').focus();
         }).catch(err => {
             localStorage.setItem('pendingOrder_' + Date.now(), JSON.stringify(orderData));
             alert("網路異常，已轉離線暫存");
@@ -620,27 +622,48 @@
         alert(`成功同步 ${count} 筆離線訂單！`);
     }
 
-    // ★ 修正：全域 Enter 監聽 (不管有沒有點選其他地方，按 Enter 都會清空搜尋)
+    // ★ 修正：全域鍵盤監聽 (快捷鍵核心)
     document.addEventListener('keydown', function(e) {
         if (!document.body.classList.contains('unlocked')) return;
 
-        // 邏輯1: 處理 Enter 清除搜尋
-        if (e.key === 'Enter') {
-            // 如果焦點在其他輸入框(例如金額)，不要清空搜尋
-            if (e.target.tagName === 'INPUT' && e.target.id !== 'quick-find') return;
-            
-            const searchBox = document.getElementById('quick-find');
-            // 只要搜尋框有字，按 Enter 就清空並還原
-            if (searchBox && searchBox.value) {
-                searchBox.value = '';
-                searchBox.blur(); // 移除焦點(手機收鍵盤)
-                initUI();
-                e.preventDefault(); // 避免觸發其他預設行為
-            }
-            return; // 結束，不再執行下方自動聚焦
+        const activeId = document.activeElement.id;
+
+        // 1. Ctrl -> 結帳 (最高優先級)
+        if (e.key === 'Control') {
+            e.preventDefault();
+            submitOrder();
+            return;
         }
 
-        // 邏輯2: 自動聚焦 (打字直接搜尋)
+        // 2. Shift -> 跳到實收金額
+        if (e.key === 'Shift') {
+            e.preventDefault();
+            document.getElementById('cash-in').focus();
+            return;
+        }
+
+        // 3. Minus (-) -> 跳到折扣金額
+        if (e.key === '-' || e.key === 'Subtract') {
+            // 保護：如果在「搜尋框」或「備註欄」裡面，不要跳走，讓用戶可以打字
+            if (activeId === 'quick-find' || activeId === 'discount-note') return;
+            
+            e.preventDefault();
+            document.getElementById('discount').focus();
+            return;
+        }
+
+        // 4. Enter -> 清除搜尋框
+        if (e.key === 'Enter') {
+            if (activeId !== 'quick-find' && document.getElementById('quick-find').value) {
+                document.getElementById('quick-find').value = ''; 
+                document.getElementById('quick-find').blur();     
+                initUI(); 
+                e.preventDefault(); 
+            }
+            return;
+        }
+
+        // 5. 自動聚焦搜尋 (打字直接搜尋)
         if (e.target.tagName === 'INPUT' && e.target.id !== 'quick-find') return;
         
         const isNumber = (e.key >= '0' && e.key <= '9');
