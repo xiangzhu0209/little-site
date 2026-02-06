@@ -393,7 +393,7 @@
             document.getElementById('backdate-mode').checked = false;
             document.getElementById('manual-date').style.display = 'none';
             document.getElementById('quick-find').value = ''; 
-            setPay('現金'); // ★ 新增：結帳後自動切回現金模式
+            setPay('現金'); // 自動重置為現金
             initUI(); 
             renderCart();
             document.getElementById('quick-find').focus();
@@ -622,7 +622,7 @@
         alert(`成功同步 ${count} 筆離線訂單！`);
     }
 
-    // ★ 快捷鍵核心邏輯
+    // ★ 修正：全域鍵盤監聽
     document.addEventListener('keydown', function(e) {
         if (!document.body.classList.contains('unlocked')) return;
 
@@ -652,20 +652,23 @@
 
         // ★ 新增： / (除號) -> 切換為電支
         if (e.key === '/') {
-            // 如果在備註欄打字，不要觸發
             if (activeId === 'discount-note') return;
             e.preventDefault();
             setPay('電支');
             return;
         }
 
-        // 4. Enter -> 清除搜尋框
+        // 4. Enter -> 清除搜尋框 (修正版: 只要不是在特定輸入格，按Enter就清空)
         if (e.key === 'Enter') {
-            if (activeId !== 'quick-find' && document.getElementById('quick-find').value) {
-                document.getElementById('quick-find').value = ''; 
-                document.getElementById('quick-find').blur();     
-                initUI(); 
-                e.preventDefault(); 
+            const ignoreIds = ['discount', 'discount-note', 'cash-in', 'new-id', 'new-n', 'new-c', 'new-p', 'new-s'];
+            if (ignoreIds.includes(activeId)) return;
+
+            const sb = document.getElementById('quick-find');
+            if(sb && sb.value) {
+                sb.value = '';
+                sb.blur();
+                initUI();
+                e.preventDefault();
             }
             return;
         }
