@@ -133,7 +133,7 @@
             <strong>🛒 當前清單 <span id="cart-count" style="font-size:0.9em; color:var(--main-brown);">(共 0 項)</span></strong>
             <div id="cart-list"></div>
             <div style="margin-top:10px;">
-                <input type="number" id="discount" class="big-input" placeholder="折扣金額" oninput="calc()">
+                <input type="number" id="discount" class="big-input" placeholder="折扣金額 (-)" oninput="calc()">
                 <input type="text" id="discount-note" class="small-note" placeholder="折扣原因/備註 (例如: 滿額贈)">
                 <div style="margin-top:5px; display:flex; gap:5px;">
                     <button onclick="addExtraCost()" style="flex:1; padding:8px; background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; border-radius:8px; cursor:pointer; font-size:0.9em; font-weight:bold;">➕ 紀錄額外支出 (扣除利潤)</button>
@@ -144,7 +144,7 @@
                 <button class="pay-btn active" id="btn-cash" onclick="setPay('現金')">💵 現金</button>
                 <button class="pay-btn" id="btn-elec" onclick="setPay('電支')">📱 電支 (/) </button>
             </div>
-            <input type="number" id="cash-in" class="big-input" placeholder="實收金額" oninput="calcChange()"> 
+            <input type="number" id="cash-in" class="big-input" placeholder="實收金額 (*)" oninput="calcChange()"> 
             <div style="text-align:right; margin-top:5px; font-size: 1.3em;">找零: <span id="cash-change" style="font-weight:bold; color:var(--price-red); font-size:1.8em;">0</span></div>
             
             <div style="margin: 10px 0; padding: 10px; background: #fff5eb; border-radius: 10px; border: 1px dashed var(--main-brown);">
@@ -635,8 +635,11 @@
             return;
         }
 
-        // 2. Shift -> 跳到實收金額
-        if (e.key === 'Shift') {
+        // 2. * (星號) -> 跳到實收金額 (取代 Shift)
+        if (e.key === '*') {
+            // 如果在備註欄打字，允許輸入 *，不跳轉
+            if (activeId === 'discount-note') return;
+            
             e.preventDefault();
             document.getElementById('cash-in').focus();
             return;
