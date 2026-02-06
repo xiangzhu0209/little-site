@@ -142,7 +142,7 @@
             <div class="total-display">$<span id="final-total">0</span></div>
             <div style="display:flex; gap:8px; margin-bottom:10px;">
                 <button class="pay-btn active" id="btn-cash" onclick="setPay('現金')">💵 現金</button>
-                <button class="pay-btn" id="btn-elec" onclick="setPay('電支')">📱 電支</button>
+                <button class="pay-btn" id="btn-elec" onclick="setPay('電支')">📱 電支 (/) </button>
             </div>
             <input type="number" id="cash-in" class="big-input" placeholder="實收金額" oninput="calcChange()"> 
             <div style="text-align:right; margin-top:5px; font-size: 1.3em;">找零: <span id="cash-change" style="font-weight:bold; color:var(--price-red); font-size:1.8em;">0</span></div>
@@ -393,9 +393,9 @@
             document.getElementById('backdate-mode').checked = false;
             document.getElementById('manual-date').style.display = 'none';
             document.getElementById('quick-find').value = ''; 
+            setPay('現金'); // ★ 新增：結帳後自動切回現金模式
             initUI(); 
             renderCart();
-            // ★ 新增：結帳後自動聚焦回搜尋框，準備下一筆
             document.getElementById('quick-find').focus();
         }).catch(err => {
             localStorage.setItem('pendingOrder_' + Date.now(), JSON.stringify(orderData));
@@ -622,7 +622,7 @@
         alert(`成功同步 ${count} 筆離線訂單！`);
     }
 
-    // ★ 修正：全域鍵盤監聽 (快捷鍵核心)
+    // ★ 快捷鍵核心邏輯
     document.addEventListener('keydown', function(e) {
         if (!document.body.classList.contains('unlocked')) return;
 
@@ -644,11 +644,18 @@
 
         // 3. Minus (-) -> 跳到折扣金額
         if (e.key === '-' || e.key === 'Subtract') {
-            // 保護：如果在「搜尋框」或「備註欄」裡面，不要跳走，讓用戶可以打字
             if (activeId === 'quick-find' || activeId === 'discount-note') return;
-            
             e.preventDefault();
             document.getElementById('discount').focus();
+            return;
+        }
+
+        // ★ 新增： / (除號) -> 切換為電支
+        if (e.key === '/') {
+            // 如果在備註欄打字，不要觸發
+            if (activeId === 'discount-note') return;
+            e.preventDefault();
+            setPay('電支');
             return;
         }
 
