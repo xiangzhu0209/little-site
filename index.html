@@ -13,10 +13,10 @@
     /* ★ 莫蘭迪色系 (Morandi Palette) */
     :root { 
         --main-brown: #b5a8a3;       /* 莫蘭迪-藕粉灰 */
-        --bg-cream: #f5f4f0;        /* 莫蘭迪-米灰白 */
-        --accent-brown: #e0d3cb;    /* 莫蘭迪-暖杏色 */
-        --price-red: #a97d73;       /* 莫蘭迪-磚紅陶 */
-        --profit-green: #8f9e8a ;   /* 莫蘭迪-灰豆綠 */
+        --bg-cream: #f5f4f0;         /* 莫蘭迪-米灰白 */
+        --accent-brown: #e0d3cb;     /* 莫蘭迪-暖杏色 */
+        --price-red: #a97d73;        /* 莫蘭迪-磚紅陶 */
+        --profit-green: #8f9e8a ;    /* 莫蘭迪-灰豆綠 */
     }
 
     header, .nav-bar, .main-content, .card-actions { display: none; }
@@ -64,7 +64,7 @@
     
     .checkout-area { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 320px; overflow-y: auto; }
     .card { background: white; border-radius: 15px; padding: 12px; border: 2px solid #e8e0d9; }
-    #cart-list { max-height: 200px; overflow-y: auto; border-bottom: 2px dashed #e8e0d9; }
+    #cart-list { max-height: 200px; overflow-y: auto; border-bottom: 2px dashed #e8e0d9; scroll-behavior: smooth; }
     .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 5px; font-size: 1.1em; border-bottom: 1px solid #eee; }
     .big-input { font-size: 1.8em; padding: 12px; width: 100%; border-radius: 10px; border: 2px solid #d1c7bc; text-align: right; box-sizing: border-box; background: #fffcf5; font-weight: bold; }
     .small-note { font-size: 1em; padding: 8px; width: 100%; border-radius: 8px; border: 1px solid #d1c7bc; box-sizing: border-box; margin-top: 5px; }
@@ -111,7 +111,7 @@
     </div>
 </div>
 
-<header>🧸 LITTLE NOOK POS (Pro 最終完美版)</header>
+<header>🧸 LITTLE NOOK POS (Pro 優化完成版)</header>
 
 <div class="nav-bar">
     <div id="navbar" style="display:flex; gap:10px;"></div>
@@ -188,6 +188,8 @@
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <h2 style="margin:0;">⚙️ 管理中心</h2>
         <div style="display:flex; gap:10px;">
+            <input type="text" id="admin-search-input" placeholder="🔍 搜尋代碼或品名..." oninput="searchAdminTable()" style="padding:8px; border-radius:5px; border:1px solid #ccc; width:180px;">
+            
             <select id="admin-cat-jump" onchange="jumpToAdminCat(this.value)" style="padding:8px; border-radius:5px;">
                 <option value="">快速跳轉分類...</option>
             </select>
@@ -331,7 +333,10 @@
             area.innerHTML += gridHtml + '</div>';
         });
         updateCatSelect();
-        if(document.getElementById('admin-panel').style.display === 'flex') renderAdminTable();
+        if(document.getElementById('admin-panel').style.display === 'flex') {
+            renderAdminTable();
+            searchAdminTable(); // 套用搜尋過濾
+        }
     }
 
     function addCart(id) {
@@ -349,6 +354,10 @@
         if(countEl) countEl.innerText = `(共 ${cart.length} 項)`;
         
         calc();
+
+        // ★ 優化 3：商品加入購物車後，自動置底顯示最新一筆
+        const cartDiv = document.getElementById('cart-list');
+        if(cartDiv) cartDiv.scrollTop = cartDiv.scrollHeight;
     }
 
     function calc() {
@@ -414,6 +423,43 @@
     function toggleAdmin() { document.getElementById('admin-panel').style.display = (document.getElementById('admin-panel').style.display==='flex'?'none':'flex'); if(document.getElementById('admin-panel').style.display==='flex') renderAdminTable(); }
     function toggleHistory() { document.getElementById('history-panel').style.display = (document.getElementById('history-panel').style.display==='flex'?'none':'flex'); }
 
+    // ★ 優化 2：後台商品列表即時搜尋功能
+    function searchAdminTable() {
+        const keyword = document.getElementById('admin-search-input').value.toLowerCase().trim();
+        const tbody = document.getElementById('admin-tbody');
+        const rows = tbody.getElementsByTagName('tr');
+        
+        let currentCatRow = null;
+        let catHasVisibleItems = false;
+
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            if (row.id.startsWith('ac')) {
+                if (currentCatRow && !catHasVisibleItems && keyword !== "") {
+                    currentCatRow.style.display = 'none';
+                }
+                currentCatRow = row;
+                catHasVisibleItems = false;
+                row.style.display = '';
+            } else {
+                const inputs = row.querySelectorAll('input[type="text"]');
+                if (inputs.length >= 2) {
+                    const id = inputs[0].value.toLowerCase();
+                    const name = inputs[1].value.toLowerCase();
+                    if (id.includes(keyword) || name.includes(keyword) || keyword === "") {
+                        row.style.display = '';
+                        catHasVisibleItems = true;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            }
+        }
+        if (currentCatRow && !catHasVisibleItems && keyword !== "") {
+            currentCatRow.style.display = 'none';
+        }
+    }
+
     function renderAdminTable() {
         let html = '';
         inv.forEach((cat, ci) => {
@@ -427,13 +473,15 @@
             </tr>`;
             
             (cat.items || []).forEach((it, ii) => {
+                // ★ 優化 4：低於 3 件自動標紅警示，並且加入 onclick="this.select()" 方便修改
+                const stockStyle = it.s <= 3 ? "color:red; font-weight:bold; background:#fff0f0;" : "";
                 html += `<tr>
                     <td><span onclick="move(${ci},${ii},-1)" style="cursor:pointer">↑</span> <span onclick="move(${ci},${ii},1)" style="cursor:pointer">↓</span></td>
-                    <td><input type="text" value="${it.id || ''}" onchange="editItem(${ci},${ii},'id',this.value)" style="width:50px;"></td>
-                    <td><input type="text" value="${it.n}" onchange="editItem(${ci},${ii},'n',this.value)"></td>
-                    <td><input type="number" value="${it.c}" onchange="editItem(${ci},${ii},'c',this.value)" style="width:50px;"></td>
-                    <td><input type="number" value="${it.p}" onchange="editItem(${ci},${ii},'p',this.value)" style="width:50px;"></td>
-                    <td><input type="number" value="${it.s}" onchange="editItem(${ci},${ii},'s',this.value)" style="width:50px;"></td>
+                    <td><input type="text" value="${it.id || ''}" onchange="editItem(${ci},${ii},'id',this.value)" onclick="this.select()" style="width:50px;"></td>
+                    <td><input type="text" value="${it.n}" onchange="editItem(${ci},${ii},'n',this.value)" onclick="this.select()"></td>
+                    <td><input type="number" value="${it.c}" onchange="editItem(${ci},${ii},'c',this.value)" onclick="this.select()" style="width:50px;"></td>
+                    <td><input type="number" value="${it.p}" onchange="editItem(${ci},${ii},'p',this.value)" onclick="this.select()" style="width:50px;"></td>
+                    <td><input type="number" value="${it.s}" onchange="editItem(${ci},${ii},'s',this.value)" onclick="this.select()" style="width:50px; ${stockStyle}"></td>
                     <td>
                         <span onclick="copyP(${ci},${ii})" style="cursor:pointer; margin-right:10px; font-size:1.2em;" title="複製此商品">📋</span>
                         <span onclick="delP(${ci},${ii})" class="del-x" title="刪除">✕</span>
@@ -442,6 +490,7 @@
             });
         });
         document.getElementById('admin-tbody').innerHTML = html;
+        searchAdminTable(); // 渲染完保持搜尋狀態
     }
 
     function copyP(ci, ii) {
@@ -556,14 +605,18 @@
         const totalSales = filtered.reduce((a,b)=>a+b.total,0);
         const totalProfit = filtered.reduce((a,b)=>a+(b.profit||0),0);
 
+        // ★ 優化 1：歷史紀錄面板中加入「電支」專屬標籤
         document.getElementById('history-result-area').innerHTML = 
             `<strong>${filter} 營收: $${totalSales} | 毛利: <span style="color:green">$${totalProfit}</span></strong><hr>` + 
-            filtered.map(o => `<div class="history-card">
-                <span class="history-del-btn" onclick="refundOrder('${o.firebaseKey}')">退貨回補</span>
-                <b>[${o.d} ${o.t}] $${o.total}</b> 
-                <span style="font-size:0.9em; color:green; margin-left:10px;">(賺: $${o.profit || 0})</span><br>
-                <small>${o.items.map(i=>i.n).join(', ')}</small>
-            </div>`).join('');
+            filtered.map(o => {
+                let payTag = o.pay === '電支' ? `<span style="background:#e0f2fe; color:#0284c7; padding:2px 6px; border-radius:4px; font-size:0.8em; margin-left:5px;">📱 電支</span>` : '';
+                return `<div class="history-card">
+                    <span class="history-del-btn" onclick="refundOrder('${o.firebaseKey}')">退貨回補</span>
+                    <b>[${o.d} ${o.t}] $${o.total}</b> ${payTag}
+                    <span style="font-size:0.9em; color:green; margin-left:10px;">(賺: $${o.profit || 0})</span><br>
+                    <small>${o.items.map(i=>i.n).join(', ')}</small>
+                </div>`;
+            }).join('');
     }
 
     function refundOrder(key) {
@@ -576,15 +629,18 @@
     }
 
     function updateLog() {
+        // ★ 優化 1：最近交易面板中加入「電支」專屬標籤
         document.getElementById('order-log').innerHTML = '<strong>📋 最近交易 <button onclick="clearLogDisplay()" style="float:right;font-size:0.8em;border-radius:5px;border:1px solid #ccc;cursor:pointer;">🗑️ 清空顯示</button></strong><hr>' + 
-            orders.slice(0,8).map(o => `
-            <div style="border-bottom:1px solid #eee; padding:5px 0;">
-                <div style="display:flex; justify-content:space-between;">
-                    <span><b>$${o.total}</b> <small>(${o.t})</small></span>
-                    <span onclick="refundOrder('${o.firebaseKey}')" style="cursor:pointer; color:red;">✕</span>
-                </div>
-                <div style="font-size:0.8em; color:#666;">${o.items.map(i=>i.n).join(', ')}</div>
-            </div>`).join('');
+            orders.slice(0,8).map(o => {
+                let payTag = o.pay === '電支' ? `<span style="background:#e0f2fe; color:#0284c7; padding:2px 6px; border-radius:4px; font-size:0.8em; margin-left:5px;">📱 電支</span>` : '';
+                return `<div style="border-bottom:1px solid #eee; padding:5px 0;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span><b>$${o.total}</b> <small>(${o.t})</small>${payTag}</span>
+                        <span onclick="refundOrder('${o.firebaseKey}')" style="cursor:pointer; color:red;">✕</span>
+                    </div>
+                    <div style="font-size:0.8em; color:#666;">${o.items.map(i=>i.n).join(', ')}</div>
+                </div>`;
+            }).join('');
     }
     
     function clearLogDisplay() {
@@ -622,30 +678,24 @@
         alert(`成功同步 ${count} 筆離線訂單！`);
     }
 
-    // ★ 修正：全域鍵盤監聽
     document.addEventListener('keydown', function(e) {
         if (!document.body.classList.contains('unlocked')) return;
 
         const activeId = document.activeElement.id;
 
-        // 1. Ctrl -> 結帳 (最高優先級)
         if (e.key === 'Control') {
             e.preventDefault();
             submitOrder();
             return;
         }
 
-        // 2. * (星號) -> 跳到實收金額 (取代 Shift)
         if (e.key === '*') {
-            // 如果在備註欄打字，允許輸入 *，不跳轉
             if (activeId === 'discount-note') return;
-            
             e.preventDefault();
             document.getElementById('cash-in').focus();
             return;
         }
 
-        // 3. Minus (-) -> 跳到折扣金額
         if (e.key === '-' || e.key === 'Subtract') {
             if (activeId === 'quick-find' || activeId === 'discount-note') return;
             e.preventDefault();
@@ -653,7 +703,6 @@
             return;
         }
 
-        // ★ 新增： / (除號) -> 切換為電支
         if (e.key === '/') {
             if (activeId === 'discount-note') return;
             e.preventDefault();
@@ -661,9 +710,8 @@
             return;
         }
 
-        // 4. Enter -> 清除搜尋框 (修正版: 只要不是在特定輸入格，按Enter就清空)
         if (e.key === 'Enter') {
-            const ignoreIds = ['discount', 'discount-note', 'cash-in', 'new-id', 'new-n', 'new-c', 'new-p', 'new-s'];
+            const ignoreIds = ['discount', 'discount-note', 'cash-in', 'new-id', 'new-n', 'new-c', 'new-p', 'new-s', 'admin-search-input'];
             if (ignoreIds.includes(activeId)) return;
 
             const sb = document.getElementById('quick-find');
@@ -676,17 +724,15 @@
             return;
         }
 
-        // 5. 自動聚焦搜尋 (打字直接搜尋)
-        if (e.target.tagName === 'INPUT' && e.target.id !== 'quick-find') return;
+        if (e.target.tagName === 'INPUT' && e.target.id !== 'quick-find' && e.target.id !== 'admin-search-input') return;
         
         const isNumber = (e.key >= '0' && e.key <= '9');
         const isChar = (e.key >= 'a' && e.key <= 'z');
-        if ((isNumber || isChar) && document.activeElement !== document.getElementById('quick-find')) {
+        if ((isNumber || isChar) && document.activeElement !== document.getElementById('quick-find') && document.activeElement !== document.getElementById('admin-search-input')) {
             document.getElementById('quick-find').focus();
         }
     });
 
-    // 搜尋功能
     function doSearch() {
         const val = document.getElementById('quick-find').value.toLowerCase().trim();
         const area = document.getElementById('item-area');
