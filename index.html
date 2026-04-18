@@ -82,8 +82,8 @@
     
     .admin-toolbar { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
     .batch-btn { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; }
-    .batch-delete { background: #fee2e2; color: #b91c1c; }
-    .batch-select { background: #f3f4f6; color: #374151; }
+    .batch-delete { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+    .batch-select { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
     </style>
 </head>
 <body>
@@ -200,8 +200,8 @@
         <select id="admin-cat-jump" onchange="jumpToAdminCat(this.value)" style="padding:8px; border-radius:5px;">
             <option value="">分類快速跳轉...</option>
         </select>
-        <button class="batch-btn batch-select" onclick="selectZeroStock()">選取所有零庫存</button>
-        <button class="batch-btn batch-delete" onclick="deleteBatchSelected()">批量刪除所選商品</button>
+        <button class="batch-btn batch-select" onclick="selectZeroStock()">☑️ 選取所有零庫存</button>
+        <button class="batch-btn batch-delete" onclick="deleteBatchSelected()">🗑️ 批量刪除所選商品</button>
     </div>
     
     <div class="add-row-top">
@@ -211,7 +211,7 @@
         <div><label>成本</label><input type="number" id="new-c" style="width:120px;" placeholder="成本"></div>
         <div><label>售價</label><input type="number" id="new-p" style="width:120px;" placeholder="售價"></div>
         <div><label>庫存</label><input type="number" id="new-s" style="width:120px;" placeholder="數量"></div>
-        <button onclick="addNewProduct()" style="background:var(--profit-green); color:white; border:none; padding:10px 25px; border-radius:8px; font-weight:bold;">➕ 新增商品</button>
+        <button onclick="addNewProduct()" style="background:var(--profit-green); color:white; border:none; padding:10px 25px; border-radius:8px; font-weight:bold; cursor:pointer;">➕ 新增商品</button>
     </div>
 
     <div class="admin-layout">
@@ -222,7 +222,7 @@
             </table>
         </div>
         <div style="background:#f9f9f9; padding:15px; border-radius:10px; overflow-y:auto;">
-            <h3>📊 當日/月排行</h3>
+            <h3>📊 當日排行</h3>
             <table><thead><tr style="background:#eee;"><th>品名</th><th>量</th><th>額</th></tr></thead><tbody id="stat-tbody"></tbody></table>
             <h3 style="margin-top:20px;">📅 本月累計</h3>
             <table><thead><tr style="background:#ddd;"><th>品名</th><th>量</th><th>額</th></tr></thead><tbody id="stat-month-tbody"></tbody></table>
@@ -301,13 +301,10 @@
             let gridHtml = `<div class="cat-title" id="c${idx}">${cat.cat}</div><div class="product-grid">`;
             (cat.items || []).forEach(it => {
                 if(it.s > 0) {
-                    const tempDiv = document.createElement('div');
-                    tempDiv.textContent = `${it.id} ${it.n}`;
+                    const tempDiv = document.createElement('div'); tempDiv.textContent = `${it.id} ${it.n}`;
                     gridHtml += `<div class="p-btn" onclick="addCart('${it.id}')">
                         <div class="p-name">${tempDiv.innerHTML}</div>
-                        <div class="p-price">$${it.p}</div>
-                        <div class="p-stock">存:${it.s}</div>
-                    </div>`;
+                        <div class="p-price">$${it.p}</div><div class="p-stock">存:${it.s}</div></div>`;
                 }
             });
             area.innerHTML += gridHtml + '</div>';
@@ -332,11 +329,14 @@
         if(cartDiv) cartDiv.scrollTop = cartDiv.scrollHeight;
     }
 
+    // ★ 新增：一鍵清空購物車
     function clearCart() {
         if (cart.length === 0) return;
         if (confirm("確定要清空當前購物車嗎？")) {
-            cart = []; renderCart();
+            cart = []; 
+            renderCart();
             ['discount', 'discount-note', 'cash-in'].forEach(id => document.getElementById(id).value = '');
+            setPay('現金');
         }
     }
 
@@ -380,7 +380,7 @@
             document.getElementById('backdate-mode').checked = false;
             document.getElementById('manual-date').style.display = 'none';
             setPay('現金'); initUI(); renderCart();
-            document.getElementById('discount-note').focus(); // 自動跳回備註欄位方便錄入
+            document.getElementById('quick-find').focus(); 
         }).catch(err => {
             localStorage.setItem('pendingOrder_' + Date.now(), JSON.stringify(orderData));
             alert("網路異常，已轉離線暫存");
@@ -419,9 +419,13 @@
         let html = '';
         inv.forEach((cat, ci) => {
             html += `<tr id="ac${ci}" style="background:#eee;"><td colspan="7" style="text-align:left; padding:10px;">
-                <b>📂 <span onclick="renameCat(${ci})" style="cursor:pointer; text-decoration:underline;">${cat.cat}</span></b></td></tr>`;
+                <button onclick="moveCat(${ci}, -1)" style="cursor:pointer; border:1px solid #ccc; background:white; border-radius:5px; padding:2px 8px; margin-right:5px;">🔼</button>
+                <button onclick="moveCat(${ci}, 1)" style="cursor:pointer; border:1px solid #ccc; background:white; border-radius:5px; padding:2px 8px; margin-right:10px;">🔽</button>
+                <b>📂 <span onclick="renameCat(${ci})" style="cursor:pointer; text-decoration:underline;">${cat.cat}</span></b>
+                <span style="font-size:0.8em; color:#666; margin-left:10px;">(共 ${(cat.items || []).length} 項)</span></td></tr>`;
             (cat.items || []).forEach((it, ii) => {
                 const lowStock = it.s <= 3 ? "color:red; font-weight:bold; background:#fff0f0;" : "";
+                // ★ 新增：每列前方加上 checkbox 供批量操作
                 html += `<tr data-ci="${ci}" data-ii="${ii}">
                     <td><input type="checkbox" class="admin-check" data-id="${it.id}"></td>
                     <td><input type="text" value="${it.id || ''}" onchange="editItem(${ci},${ii},'id',this.value)" onclick="this.select()" style="width:50px;"></td>
@@ -429,13 +433,27 @@
                     <td><input type="number" value="${it.c}" onchange="editItem(${ci},${ii},'c',this.value)" onclick="this.select()" style="width:50px;"></td>
                     <td><input type="number" value="${it.p}" onchange="editItem(${ci},${ii},'p',this.value)" onclick="this.select()" style="width:50px;"></td>
                     <td><input type="number" value="${it.s}" onchange="editItem(${ci},${ii},'s',this.value)" onclick="this.select()" style="width:50px; ${lowStock}"></td>
-                    <td><span onclick="delP(${ci},${ii})" class="del-x">✕</span></td>
+                    <td><span onclick="copyP(${ci},${ii})" style="cursor:pointer; margin-right:10px;" title="複製">📋</span><span onclick="delP(${ci},${ii})" class="del-x" title="刪除">✕</span></td>
                 </tr>`;
             });
         });
         document.getElementById('admin-tbody').innerHTML = html;
+        searchAdminTable();
     }
 
+    function copyP(ci, ii) {
+        const item = inv[ci].items[ii]; const newItem = { id: item.id, n: item.n + " (複製)", c: item.c, p: item.p, s: 0 };
+        inv[ci].items.splice(ii + 1, 0, newItem); db.ref('inventory').set(inv).then(() => { renderAdminTable(); initUI(); });
+    }
+
+    function moveCat(ci, dir) {
+        if (ci + dir >= 0 && ci + dir < inv.length) {
+            [inv[ci], inv[ci + dir]] = [inv[ci + dir], inv[ci]];
+            db.ref('inventory').set(inv).then(() => { initUI(); renderAdminTable(); setTimeout(() => jumpToAdminCat('ac' + (ci + dir)), 100); });
+        }
+    }
+
+    // ★ 新增：一鍵選取 0 庫存
     function selectZeroStock() {
         inv.forEach((cat, ci) => {
             (cat.items || []).forEach((it, ii) => {
@@ -447,26 +465,24 @@
         });
     }
 
+    // ★ 新增：批量刪除所選
     function deleteBatchSelected() {
         const selected = Array.from(document.querySelectorAll('.admin-check:checked'));
-        if (selected.length === 0) return alert("請先選取商品");
-        const names = selected.map(cb => {
-            const row = cb.closest('tr');
-            return row.querySelectorAll('input')[2].value;
-        });
-        if (confirm(`確定要批量刪除以下 ${selected.length} 項商品嗎？\n\n${names.join(', ')}`)) {
+        if (selected.length === 0) return alert("請先在左側打勾選取要刪除的商品");
+        const names = selected.map(cb => cb.closest('tr').querySelectorAll('input[type="text"]')[1].value);
+        if (confirm(`確定要批量刪除以下 ${selected.length} 項商品嗎？\n\n${names.join('\n')}`)) {
             let deletedCount = 0;
             const toDelete = selected.map(cb => ({ ci: parseInt(cb.closest('tr').dataset.ci), ii: parseInt(cb.closest('tr').dataset.ii) }))
                                      .sort((a, b) => b.ii - a.ii);
             toDelete.forEach(pos => { inv[pos.ci].items.splice(pos.ii, 1); deletedCount++; });
-            db.ref('inventory').set(inv).then(() => { alert(`已成功刪除 ${deletedCount} 項商品`); initUI(); });
+            db.ref('inventory').set(inv).then(() => { alert(`已成功刪除 ${deletedCount} 項商品`); initUI(); renderAdminTable(); });
         }
     }
 
     function toggleAllAdmin(chk) { document.querySelectorAll('.admin-check').forEach(cb => cb.checked = chk); }
     function editItem(ci, ii, k, v) { inv[ci].items[ii][k] = (k==='n'||k==='id'?v:Number(v)); db.ref('inventory').set(inv); }
     function delP(ci, ii) { if(confirm("確定刪除此商品？")){ inv[ci].items.splice(ii,1); db.ref('inventory').set(inv); } }
-    function renameCat(ci) { const n = prompt("修改分類名稱：", inv[ci].cat); if(n){ inv[ci].cat = n; db.ref('inventory').set(inv); } }
+    function renameCat(ci) { const n = prompt("修改分類名稱：", inv[ci].cat); if(n){ inv[ci].cat = n; db.ref('inventory').set(inv); initUI(); renderAdminTable(); } }
 
     function addNewProduct() {
         const cat = inv.find(v => v.cat === document.getElementById('select-cat').value);
@@ -506,12 +522,15 @@
         }
         const filtered = orders.filter(o => o.d.includes(filter));
         const totalSales = filtered.reduce((a,b)=>a+b.total,0);
+        
+        // ★ 新增：計算現金與電支個別的總營收
         const cashTotal = filtered.filter(o => o.pay === '現金').reduce((a,b)=>a+b.total,0);
         const elecTotal = filtered.filter(o => o.pay === '電支').reduce((a,b)=>a+b.total,0);
+        
         const totalProfit = filtered.reduce((a,b)=>a+(b.profit||0),0);
 
         document.getElementById('history-result-area').innerHTML = 
-            `<strong>${filter} 營收: $${totalSales} <span style="font-size:0.8em; color:#666;">(現金: $${cashTotal} | 電支: $${elecTotal})</span> | 毛利: <span style="color:green">$${totalProfit}</span></strong><hr>` + 
+            `<strong>${filter} 總營收: $${totalSales} <span style="font-size:0.85em; color:#0284c7;">(現金: $${cashTotal} | 電支: $${elecTotal})</span><br>毛利: <span style="color:green">$${totalProfit}</span></strong><hr>` + 
             filtered.map(o => {
                 let tag = o.pay === '電支' ? `<span style="background:#e0f2fe; color:#0284c7; padding:2px 6px; border-radius:4px; font-size:0.8em; margin-left:5px;">📱 電支</span>` : '';
                 return `<div class="history-card"><span class="history-del-btn" onclick="refundOrder('${o.firebaseKey}')">退貨回補</span>
@@ -531,7 +550,8 @@
     function updateLog() {
         document.getElementById('order-log').innerHTML = '<strong>📋 最近交易 <button onclick="clearLogDisplay()" style="float:right;font-size:0.8em;border-radius:5px;border:1px solid #ccc;cursor:pointer;">🗑️ 隱藏</button></strong><hr>' + 
             orders.slice(0,8).map(o => `<div style="border-bottom:1px solid #eee; padding:5px 0;"><div style="display:flex; justify-content:space-between;">
-                <span><b>$${o.total}</b> <small>(${o.t})</small>${o.pay==='電支'?'📱':''}</span><span onclick="refundOrder('${o.firebaseKey}')" style="cursor:pointer; color:red;">✕</span></div></div>`).join('');
+                <span><b>$${o.total}</b> <small>(${o.t})</small>${o.pay==='電支'?' <span style="color:#0284c7;font-size:0.8em;">📱電支</span>':''}</span><span onclick="refundOrder('${o.firebaseKey}')" style="cursor:pointer; color:red;">✕</span></div>
+                <div style="font-size:0.8em; color:#666;">${o.items.map(i=>i.n).join(', ')}</div></div>`).join('');
     }
     
     function clearLogDisplay() { document.getElementById('order-log').innerHTML = '<strong>📋 最近交易</strong><hr><div style="text-align:center;color:#999;padding:20px;">已隱藏</div>'; }
