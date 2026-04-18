@@ -334,7 +334,7 @@
         if (confirm("確定要清空當前購物車嗎？")) {
             cart = []; 
             renderCart();
-            ['discount', 'discount-note', 'cash-in'].forEach(id => document.getElementById(id).value = '');
+            ['discount', 'discount-note', 'cash-in', 'quick-find'].forEach(id => document.getElementById(id).value = '');
             setPay('現金');
         }
     }
@@ -375,11 +375,13 @@
         cart.forEach(item => { inv.forEach(c => (c.items || []).forEach(i => { if(i.id === item.id) i.s--; })); });
         db.ref('orders').push(orderData).then(() => db.ref('inventory').set(inv)).then(() => {
             alert("結帳成功！"); cart=[]; 
-            ['discount', 'discount-note', 'cash-in', 'manual-date'].forEach(id => document.getElementById(id).value = '');
+            // ★ 修改：加入 quick-find 一併清空
+            ['discount', 'discount-note', 'cash-in', 'manual-date', 'quick-find'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('backdate-mode').checked = false;
             document.getElementById('manual-date').style.display = 'none';
             setPay('現金'); initUI(); renderCart();
-            document.getElementById('quick-find').focus(); 
+            // ★ 修改：加入 setTimeout 強制讓焦點回歸搜尋框
+            setTimeout(() => { document.getElementById('quick-find').focus(); }, 10);
         }).catch(err => {
             localStorage.setItem('pendingOrder_' + Date.now(), JSON.stringify(orderData));
             alert("網路異常，已轉離線暫存");
@@ -524,7 +526,6 @@
         
         const totalProfit = filtered.reduce((a,b)=>a+(b.profit||0),0);
 
-        // ★ 恢復：歷史紀錄顯示單筆利潤 (賺: $XXX)
         document.getElementById('history-result-area').innerHTML = 
             `<strong>${filter} 總營收: $${totalSales} <span style="font-size:0.85em; color:#0284c7;">(現金: $${cashTotal} | 電支: $${elecTotal})</span><br>毛利: <span style="color:green">$${totalProfit}</span></strong><hr>` + 
             filtered.map(o => {
@@ -544,7 +545,6 @@
     }
 
     function updateLog() {
-        // ★ 恢復：最近交易顯示單筆利潤 (賺$XXX)
         document.getElementById('order-log').innerHTML = '<strong>📋 最近交易 <button onclick="clearLogDisplay()" style="float:right;font-size:0.8em;border-radius:5px;border:1px solid #ccc;cursor:pointer;">🗑️ 隱藏</button></strong><hr>' + 
             orders.slice(0,8).map(o => `<div style="border-bottom:1px solid #eee; padding:5px 0;"><div style="display:flex; justify-content:space-between;">
                 <span><b>$${o.total}</b> <span style="font-size:0.85em; color:var(--profit-green); font-weight:bold; margin-left:5px;">(賺$${o.profit || 0})</span> <small>(${o.t})</small>${o.pay==='電支'?' <span style="color:#0284c7;font-size:0.8em;">📱電支</span>':''}</span><span onclick="refundOrder('${o.firebaseKey}')" style="cursor:pointer; color:red;">✕</span></div>
