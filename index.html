@@ -329,7 +329,6 @@
         if(cartDiv) cartDiv.scrollTop = cartDiv.scrollHeight;
     }
 
-    // ★ 新增：一鍵清空購物車
     function clearCart() {
         if (cart.length === 0) return;
         if (confirm("確定要清空當前購物車嗎？")) {
@@ -425,7 +424,6 @@
                 <span style="font-size:0.8em; color:#666; margin-left:10px;">(共 ${(cat.items || []).length} 項)</span></td></tr>`;
             (cat.items || []).forEach((it, ii) => {
                 const lowStock = it.s <= 3 ? "color:red; font-weight:bold; background:#fff0f0;" : "";
-                // ★ 新增：每列前方加上 checkbox 供批量操作
                 html += `<tr data-ci="${ci}" data-ii="${ii}">
                     <td><input type="checkbox" class="admin-check" data-id="${it.id}"></td>
                     <td><input type="text" value="${it.id || ''}" onchange="editItem(${ci},${ii},'id',this.value)" onclick="this.select()" style="width:50px;"></td>
@@ -453,7 +451,6 @@
         }
     }
 
-    // ★ 新增：一鍵選取 0 庫存
     function selectZeroStock() {
         inv.forEach((cat, ci) => {
             (cat.items || []).forEach((it, ii) => {
@@ -465,7 +462,6 @@
         });
     }
 
-    // ★ 新增：批量刪除所選
     function deleteBatchSelected() {
         const selected = Array.from(document.querySelectorAll('.admin-check:checked'));
         if (selected.length === 0) return alert("請先在左側打勾選取要刪除的商品");
@@ -523,18 +519,18 @@
         const filtered = orders.filter(o => o.d.includes(filter));
         const totalSales = filtered.reduce((a,b)=>a+b.total,0);
         
-        // ★ 新增：計算現金與電支個別的總營收
         const cashTotal = filtered.filter(o => o.pay === '現金').reduce((a,b)=>a+b.total,0);
         const elecTotal = filtered.filter(o => o.pay === '電支').reduce((a,b)=>a+b.total,0);
         
         const totalProfit = filtered.reduce((a,b)=>a+(b.profit||0),0);
 
+        // ★ 恢復：歷史紀錄顯示單筆利潤 (賺: $XXX)
         document.getElementById('history-result-area').innerHTML = 
             `<strong>${filter} 總營收: $${totalSales} <span style="font-size:0.85em; color:#0284c7;">(現金: $${cashTotal} | 電支: $${elecTotal})</span><br>毛利: <span style="color:green">$${totalProfit}</span></strong><hr>` + 
             filtered.map(o => {
                 let tag = o.pay === '電支' ? `<span style="background:#e0f2fe; color:#0284c7; padding:2px 6px; border-radius:4px; font-size:0.8em; margin-left:5px;">📱 電支</span>` : '';
                 return `<div class="history-card"><span class="history-del-btn" onclick="refundOrder('${o.firebaseKey}')">退貨回補</span>
-                    <b>[${o.d} ${o.t}] $${o.total}</b> ${tag}<br><small>${o.items.map(i=>i.n).join(', ')}</small></div>`;
+                    <b>[${o.d} ${o.t}] $${o.total}</b> <span style="font-size:0.9em; color:green; margin-left:5px;">(賺: $${o.profit || 0})</span> ${tag}<br><small>${o.items.map(i=>i.n).join(', ')}</small></div>`;
             }).join('');
     }
 
@@ -548,9 +544,10 @@
     }
 
     function updateLog() {
+        // ★ 恢復：最近交易顯示單筆利潤 (賺$XXX)
         document.getElementById('order-log').innerHTML = '<strong>📋 最近交易 <button onclick="clearLogDisplay()" style="float:right;font-size:0.8em;border-radius:5px;border:1px solid #ccc;cursor:pointer;">🗑️ 隱藏</button></strong><hr>' + 
             orders.slice(0,8).map(o => `<div style="border-bottom:1px solid #eee; padding:5px 0;"><div style="display:flex; justify-content:space-between;">
-                <span><b>$${o.total}</b> <small>(${o.t})</small>${o.pay==='電支'?' <span style="color:#0284c7;font-size:0.8em;">📱電支</span>':''}</span><span onclick="refundOrder('${o.firebaseKey}')" style="cursor:pointer; color:red;">✕</span></div>
+                <span><b>$${o.total}</b> <span style="font-size:0.85em; color:var(--profit-green); font-weight:bold; margin-left:5px;">(賺$${o.profit || 0})</span> <small>(${o.t})</small>${o.pay==='電支'?' <span style="color:#0284c7;font-size:0.8em;">📱電支</span>':''}</span><span onclick="refundOrder('${o.firebaseKey}')" style="cursor:pointer; color:red;">✕</span></div>
                 <div style="font-size:0.8em; color:#666;">${o.items.map(i=>i.n).join(', ')}</div></div>`).join('');
     }
     
