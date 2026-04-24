@@ -111,6 +111,18 @@
     </div>
 </div>
 
+<div id="move-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10005; align-items:center; justify-content:center;">
+    <div style="background:var(--bg-cream); padding:25px; border-radius:15px; text-align:center; border:3px solid var(--main-brown); min-width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+        <h3 style="margin-top:0; color:var(--main-brown);">📂 選擇目標分類</h3>
+        <p id="move-item-name" style="font-size:1.1em; font-weight:bold; color:#5d5246; margin-bottom:15px;"></p>
+        <select id="move-target-cat" style="width:100%; padding:12px; font-size:1.1em; border-radius:8px; border:2px solid #ccc; margin-bottom:20px;"></select>
+        <div style="display:flex; gap:10px; justify-content:center;">
+            <button onclick="document.getElementById('move-modal').style.display='none'" style="flex:1; padding:12px; border-radius:8px; background:#e0d3cb; color:#5d5246; border:none; cursor:pointer; font-weight:bold;">取消</button>
+            <button onclick="confirmMoveItem()" style="flex:1; padding:12px; border-radius:8px; background:var(--profit-green); color:white; border:none; font-weight:bold; cursor:pointer;">確定移動</button>
+        </div>
+    </div>
+</div>
+
 <header>🧸 LITTLE NOOK POS (Pro 優化版)</header>
 
 <div class="nav-bar">
@@ -249,6 +261,9 @@
     let currentPay = '現金'; 
     const ADMIN_PW = "0209";
 
+    // ★ 新增：用於記錄當前準備搬家的商品
+    let pendingMove = null;
+
     auth.onAuthStateChanged(user => {
         const authOverlay = document.getElementById('auth-overlay');
         const loginOverlay = document.getElementById('login-overlay');
@@ -375,12 +390,10 @@
         cart.forEach(item => { inv.forEach(c => (c.items || []).forEach(i => { if(i.id === item.id) i.s--; })); });
         db.ref('orders').push(orderData).then(() => db.ref('inventory').set(inv)).then(() => {
             alert("結帳成功！"); cart=[]; 
-            // ★ 修改：加入 quick-find 一併清空
             ['discount', 'discount-note', 'cash-in', 'manual-date', 'quick-find'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('backdate-mode').checked = false;
             document.getElementById('manual-date').style.display = 'none';
             setPay('現金'); initUI(); renderCart();
-            // ★ 修改：加入 setTimeout 強制讓焦點回歸搜尋框
             setTimeout(() => { document.getElementById('quick-find').focus(); }, 10);
         }).catch(err => {
             localStorage.setItem('pendingOrder_' + Date.now(), JSON.stringify(orderData));
@@ -426,7 +439,6 @@
                 <span style="font-size:0.8em; color:#666; margin-left:10px;">(共 ${(cat.items || []).length} 項)</span></td></tr>`;
             (cat.items || []).forEach((it, ii) => {
                 const lowStock = it.s <= 3 ? "color:red; font-weight:bold; background:#fff0f0;" : "";
-                // ★ 修改2：在這裡加入換分類的 📂 按鈕
                 html += `<tr data-ci="${ci}" data-ii="${ii}">
                     <td><input type="checkbox" class="admin-check" data-id="${it.id}"></td>
                     <td><input type="text" value="${it.id || ''}" onchange="editItem(${ci},${ii},'id',this.value)" onclick="this.select()" style="width:50px;"></td>
@@ -436,7 +448,7 @@
                     <td><input type="number" value="${it.s}" onchange="editItem(${ci},${ii},'s',this.value)" onclick="this.select()" style="width:50px; ${lowStock}"></td>
                     <td>
                         <span onclick="copyP(${ci},${ii})" style="cursor:pointer; margin-right:10px;" title="複製">📋</span>
-                        <span onclick="changeItemCat(${ci},${ii})" style="cursor:pointer; margin-right:10px;" title="更改分類">📂</span>
+                        <span onclick="changeItemCat(${ci},${ii})" style="cursor:pointer; margin-right:10px;" title="更換分類">📂</span>
                         <span onclick="delP(${ci},${ii})" class="del-x" title="刪除">✕</span>
                     </td>
                 </tr>`;
@@ -446,32 +458,46 @@
         searchAdminTable();
     }
 
-    // ★ 修改2：新增這段讓商品搬家的邏輯
+    // ★ 新增：打開搬家視窗的邏輯
     function changeItemCat(ci, ii) {
+        pendingMove = { ci, ii };
         const item = inv[ci].items[ii];
-        let catList = inv.map(c => c.cat).join('\n');
-        const targetCatName = prompt(`請輸入你想將「${item.n}」移動到的分類名稱：\n\n可用的分類：\n${catList}`);
+        document.getElementById('move-item-name').innerText = `商品：${item.n}`;
         
-        if (!targetCatName) return; 
-
-        const targetCatIndex = inv.findIndex(c => c.cat === targetCatName.trim());
-        if (targetCatIndex === -1) {
-            alert("找不到這個分類名稱，請確認輸入是否正確。");
+        let selectHtml = '';
+        inv.forEach((c, idx) => {
+            if (idx !== ci) {
+                selectHtml += `<option value="${idx}">${c.cat}</option>`;
+            }
+        });
+        
+        if (selectHtml === '') {
+            alert("目前沒有其他分類可以移動喔！");
             return;
         }
+        
+        document.getElementById('move-target-cat').innerHTML = selectHtml;
+        document.getElementById('move-modal').style.display = 'flex';
+    }
 
-        if (targetCatIndex === ci) {
-            alert("該商品已經在這個分類中了！");
-            return;
-        }
-
-        if (!inv[targetCatIndex].items) inv[targetCatIndex].items = [];
-        inv[targetCatIndex].items.push({...item}); 
-        inv[ci].items.splice(ii, 1); 
-
+    // ★ 新增：確認搬家的邏輯
+    function confirmMoveItem() {
+        if (!pendingMove) return;
+        const { ci, ii } = pendingMove;
+        const targetCi = parseInt(document.getElementById('move-target-cat').value);
+        
+        const item = inv[ci].items[ii];
+        
+        if (!inv[targetCi].items) inv[targetCi].items = [];
+        inv[targetCi].items.push({...item}); // 加進新家
+        inv[ci].items.splice(ii, 1); // 從舊家刪除
+        
         db.ref('inventory').set(inv).then(() => {
-            alert(`已成功將 ${item.n} 移動到 ${targetCatName} 分類！`);
-        }); 
+            document.getElementById('move-modal').style.display = 'none';
+            pendingMove = null;
+            initUI();
+            renderAdminTable();
+        });
     }
 
     function copyP(ci, ii) {
@@ -521,18 +547,24 @@
         const newItem = { id: document.getElementById('new-id').value, n: document.getElementById('new-n').value, c: Number(document.getElementById('new-c').value), p: Number(document.getElementById('new-p').value), s: Number(document.getElementById('new-s').value) };
         if(!newItem.n) return alert("請填品名");
         if(!cat.items) cat.items = []; cat.items.push(newItem);
-        db.ref('inventory').set(inv).then(() => { ['new-id', 'new-n', 'new-c', 'new-p', 'new-s'].forEach(id => document.getElementById(id).value = ''); document.getElementById('new-id').focus(); });
+        db.ref('inventory').set(inv).then(() => { 
+            // ★ 修改：不要清空 select-cat，這樣就能一直保持同分類建檔
+            ['new-id', 'new-n', 'new-c', 'new-p', 'new-s'].forEach(id => document.getElementById(id).value = ''); 
+            document.getElementById('new-id').focus(); 
+        });
     }
 
     function checkNewCat(v) { if(v==="ADD") { const n = prompt("新分類名稱："); if(n){ inv.push({cat:n, items:[]}); db.ref('inventory').set(inv).then(() => updateCatSelect()); } } }
     
-    // ★ 修改1：在這行加上記憶目前選取分類的邏輯
+    // ★ 修改：加上記憶選取分類的防呆機制
     function updateCatSelect() { 
         const sel = document.getElementById('select-cat'); 
         if(sel) { 
             const currentVal = sel.value; 
             sel.innerHTML = inv.map(c => `<option value="${c.cat}">${c.cat}</option>`).join('') + `<option value="ADD">➕ 新增分類</option>`; 
-            if(currentVal && inv.find(c => c.cat === currentVal)) sel.value = currentVal; 
+            if(currentVal && inv.find(c => c.cat === currentVal)) {
+                sel.value = currentVal; 
+            }
         } 
     }
     
