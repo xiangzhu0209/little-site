@@ -139,9 +139,15 @@
 
     <div class="checkout-area">
         <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
                 <strong>🛒 當前清單 <span id="cart-count" style="font-size:0.9em; color:var(--main-brown);">(共 0 項)</span></strong>
-                <button onclick="clearCart()" style="padding:4px 10px; border-radius:8px; border:1px solid #ccc; background:none; color:#999; cursor:pointer; font-size:0.85em;">🧹 清空</button>
+                
+                <div style="display:flex; align-items:center; gap: 10px;">
+                    <div style="background:#fffcf5; padding:4px 12px; border-radius:10px; border:2px dashed var(--main-brown); font-weight:bold; font-size:1.1em; color:#5d5246;">
+                        找零: <span id="cash-change" style="color:var(--price-red); font-size:1.4em;">0</span>
+                    </div>
+                    <button onclick="clearCart()" style="padding:6px 12px; border-radius:8px; border:1px solid #ccc; background:white; color:#999; cursor:pointer; font-size:0.9em; font-weight:bold;">🧹 清空</button>
+                </div>
             </div>
             <div id="cart-list"></div>
             <div style="margin-top:10px;">
@@ -156,8 +162,8 @@
                 <button class="pay-btn active" id="btn-cash" onclick="setPay('現金')">💵 現金</button>
                 <button class="pay-btn" id="btn-elec" onclick="setPay('電支')">📱 電支 (/) </button>
             </div>
+            
             <input type="number" id="cash-in" class="big-input" placeholder="實收金額 (*)" oninput="calcChange()"> 
-            <div style="text-align:right; margin-top:5px; font-size: 1.3em;">找零: <span id="cash-change" style="font-weight:bold; color:var(--price-red); font-size:1.8em;">0</span></div>
             
             <div style="margin: 10px 0; padding: 10px; background: #fff5eb; border-radius: 10px; border: 1px dashed var(--main-brown);">
                 <label style="font-size: 0.9em; cursor: pointer;">
