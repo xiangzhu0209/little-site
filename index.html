@@ -426,6 +426,7 @@
                 <span style="font-size:0.8em; color:#666; margin-left:10px;">(共 ${(cat.items || []).length} 項)</span></td></tr>`;
             (cat.items || []).forEach((it, ii) => {
                 const lowStock = it.s <= 3 ? "color:red; font-weight:bold; background:#fff0f0;" : "";
+                // ★ 修改2：在這裡加入換分類的 📂 按鈕
                 html += `<tr data-ci="${ci}" data-ii="${ii}">
                     <td><input type="checkbox" class="admin-check" data-id="${it.id}"></td>
                     <td><input type="text" value="${it.id || ''}" onchange="editItem(${ci},${ii},'id',this.value)" onclick="this.select()" style="width:50px;"></td>
@@ -433,12 +434,44 @@
                     <td><input type="number" value="${it.c}" onchange="editItem(${ci},${ii},'c',this.value)" onclick="this.select()" style="width:50px;"></td>
                     <td><input type="number" value="${it.p}" onchange="editItem(${ci},${ii},'p',this.value)" onclick="this.select()" style="width:50px;"></td>
                     <td><input type="number" value="${it.s}" onchange="editItem(${ci},${ii},'s',this.value)" onclick="this.select()" style="width:50px; ${lowStock}"></td>
-                    <td><span onclick="copyP(${ci},${ii})" style="cursor:pointer; margin-right:10px;" title="複製">📋</span><span onclick="delP(${ci},${ii})" class="del-x" title="刪除">✕</span></td>
+                    <td>
+                        <span onclick="copyP(${ci},${ii})" style="cursor:pointer; margin-right:10px;" title="複製">📋</span>
+                        <span onclick="changeItemCat(${ci},${ii})" style="cursor:pointer; margin-right:10px;" title="更改分類">📂</span>
+                        <span onclick="delP(${ci},${ii})" class="del-x" title="刪除">✕</span>
+                    </td>
                 </tr>`;
             });
         });
         document.getElementById('admin-tbody').innerHTML = html;
         searchAdminTable();
+    }
+
+    // ★ 修改2：新增這段讓商品搬家的邏輯
+    function changeItemCat(ci, ii) {
+        const item = inv[ci].items[ii];
+        let catList = inv.map(c => c.cat).join('\n');
+        const targetCatName = prompt(`請輸入你想將「${item.n}」移動到的分類名稱：\n\n可用的分類：\n${catList}`);
+        
+        if (!targetCatName) return; 
+
+        const targetCatIndex = inv.findIndex(c => c.cat === targetCatName.trim());
+        if (targetCatIndex === -1) {
+            alert("找不到這個分類名稱，請確認輸入是否正確。");
+            return;
+        }
+
+        if (targetCatIndex === ci) {
+            alert("該商品已經在這個分類中了！");
+            return;
+        }
+
+        if (!inv[targetCatIndex].items) inv[targetCatIndex].items = [];
+        inv[targetCatIndex].items.push({...item}); 
+        inv[ci].items.splice(ii, 1); 
+
+        db.ref('inventory').set(inv).then(() => {
+            alert(`已成功將 ${item.n} 移動到 ${targetCatName} 分類！`);
+        }); 
     }
 
     function copyP(ci, ii) {
@@ -492,7 +525,17 @@
     }
 
     function checkNewCat(v) { if(v==="ADD") { const n = prompt("新分類名稱："); if(n){ inv.push({cat:n, items:[]}); db.ref('inventory').set(inv).then(() => updateCatSelect()); } } }
-    function updateCatSelect() { const sel = document.getElementById('select-cat'); if(sel) { sel.innerHTML = inv.map(c => `<option value="${c.cat}">${c.cat}</option>`).join('') + `<option value="ADD">➕ 新增分類</option>`; } }
+    
+    // ★ 修改1：在這行加上記憶目前選取分類的邏輯
+    function updateCatSelect() { 
+        const sel = document.getElementById('select-cat'); 
+        if(sel) { 
+            const currentVal = sel.value; 
+            sel.innerHTML = inv.map(c => `<option value="${c.cat}">${c.cat}</option>`).join('') + `<option value="ADD">➕ 新增分類</option>`; 
+            if(currentVal && inv.find(c => c.cat === currentVal)) sel.value = currentVal; 
+        } 
+    }
+    
     function jumpToAdminCat(v) { if(v) document.getElementById(v).scrollIntoView({behavior: "smooth"}); }
 
     function renderStatTable() {
