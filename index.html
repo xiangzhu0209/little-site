@@ -123,6 +123,17 @@
     </div>
 </div>
 
+<div id="checkout-success-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10010; align-items:center; justify-content:center;">
+    <div style="background:white; padding:40px; border-radius:20px; text-align:center; border:5px solid var(--profit-green); min-width: 320px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+        <h2 style="margin-top:0; color:var(--profit-green); font-size: 2.2em;">✅ 結帳成功</h2>
+        <div style="font-size: 1.5em; margin: 25px 0; color: #5d5246;">
+            應找零錢<br>
+            <span id="modal-change-amt" style="font-size: 2.5em; color: var(--price-red); font-weight: bold; display: block; margin-top: 10px;">$0</span>
+        </div>
+        <button onclick="closeCheckoutModal()" style="width:100%; padding:15px; border-radius:12px; background:var(--main-brown); color:white; border:none; font-weight:bold; font-size:1.4em; cursor:pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">關閉 (Enter)</button>
+    </div>
+</div>
+
 <header>🧸 LITTLE NOOK POS (Pro 優化版)</header>
 
 <div class="nav-bar">
@@ -141,13 +152,7 @@
         <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
                 <strong>🛒 當前清單 <span id="cart-count" style="font-size:0.9em; color:var(--main-brown);">(共 0 項)</span></strong>
-                
-                <div style="display:flex; align-items:center; gap: 10px;">
-                    <div style="background:#fffcf5; padding:4px 12px; border-radius:10px; border:2px dashed var(--main-brown); font-weight:bold; font-size:1.1em; color:#5d5246;">
-                        找零: <span id="cash-change" style="color:var(--price-red); font-size:1.4em;">0</span>
-                    </div>
-                    <button onclick="clearCart()" style="padding:6px 12px; border-radius:8px; border:1px solid #ccc; background:white; color:#999; cursor:pointer; font-size:0.9em; font-weight:bold;">🧹 清空</button>
-                </div>
+                <button onclick="clearCart()" style="padding:6px 12px; border-radius:8px; border:1px solid #ccc; background:white; color:#999; cursor:pointer; font-size:0.9em; font-weight:bold;">🧹 清空</button>
             </div>
             <div id="cart-list"></div>
             <div style="margin-top:10px;">
@@ -163,7 +168,7 @@
                 <button class="pay-btn" id="btn-elec" onclick="setPay('電支')">📱 電支 (/) </button>
             </div>
             
-            <input type="number" id="cash-in" class="big-input" placeholder="實收金額 (*)" oninput="calcChange()"> 
+            <input type="number" id="cash-in" class="big-input" placeholder="實收金額 (*)"> 
             
             <div style="margin: 10px 0; padding: 10px; background: #fff5eb; border-radius: 10px; border: 1px dashed var(--main-brown);">
                 <label style="font-size: 0.9em; cursor: pointer;">
@@ -267,7 +272,6 @@
     let currentPay = '現金'; 
     const ADMIN_PW = "0209";
 
-    // ★ 新增：用於記錄當前準備搬家的商品
     let pendingMove = null;
 
     auth.onAuthStateChanged(user => {
@@ -363,18 +367,18 @@
     function calc() {
         const total = cart.reduce((a,b)=>a+b.p, 0) - Number(document.getElementById('discount').value || 0);
         document.getElementById('final-total').innerText = Math.max(0, total);
-        calcChange();
-    }
-
-    function calcChange() {
-        const t = Number(document.getElementById('final-total').innerText), p = Number(document.getElementById('cash-in').value || 0);
-        document.getElementById('cash-change').innerText = p > t ? p - t : 0;
     }
 
     function setPay(m) {
         currentPay = m;
         document.getElementById('btn-cash').className = m==='現金'?'pay-btn active':'pay-btn';
         document.getElementById('btn-elec').className = m==='電支'?'pay-btn active':'pay-btn';
+    }
+
+    // ★ 新增：關閉結帳成功視窗的函數
+    function closeCheckoutModal() {
+        document.getElementById('checkout-success-modal').style.display = 'none';
+        setTimeout(() => { document.getElementById('quick-find').focus(); }, 10);
     }
 
     function submitOrder() {
@@ -385,7 +389,12 @@
             orderDate = new Date(document.getElementById('manual-date').value).toLocaleDateString('zh-TW');
             orderTime = "23:59:59";
         }
+        
+        // 取得總金額與實收金額，並計算找零
         const total = Number(document.getElementById('final-total').innerText);
+        const cashIn = Number(document.getElementById('cash-in').value || 0);
+        const changeAmt = cashIn > total ? cashIn - total : 0;
+        
         const cost = cart.reduce((a,b)=>a+(b.c||0), 0);
         const orderData = {
             t: orderTime, d: orderDate, total, profit: total - cost, 
@@ -393,14 +402,19 @@
             discount: Number(document.getElementById('discount').value || 0),
             note: document.getElementById('discount-note').value
         };
+        
         cart.forEach(item => { inv.forEach(c => (c.items || []).forEach(i => { if(i.id === item.id) i.s--; })); });
+        
         db.ref('orders').push(orderData).then(() => db.ref('inventory').set(inv)).then(() => {
-            alert("結帳成功！"); cart=[]; 
+            // ★ 修改：不再使用 alert，而是叫出找零視窗
+            document.getElementById('modal-change-amt').innerText = "$" + changeAmt;
+            document.getElementById('checkout-success-modal').style.display = 'flex';
+            
+            cart=[]; 
             ['discount', 'discount-note', 'cash-in', 'manual-date', 'quick-find'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('backdate-mode').checked = false;
             document.getElementById('manual-date').style.display = 'none';
             setPay('現金'); initUI(); renderCart();
-            setTimeout(() => { document.getElementById('quick-find').focus(); }, 10);
         }).catch(err => {
             localStorage.setItem('pendingOrder_' + Date.now(), JSON.stringify(orderData));
             alert("網路異常，已轉離線暫存");
@@ -464,7 +478,6 @@
         searchAdminTable();
     }
 
-    // ★ 新增：打開搬家視窗的邏輯
     function changeItemCat(ci, ii) {
         pendingMove = { ci, ii };
         const item = inv[ci].items[ii];
@@ -486,7 +499,6 @@
         document.getElementById('move-modal').style.display = 'flex';
     }
 
-    // ★ 新增：確認搬家的邏輯
     function confirmMoveItem() {
         if (!pendingMove) return;
         const { ci, ii } = pendingMove;
@@ -495,8 +507,8 @@
         const item = inv[ci].items[ii];
         
         if (!inv[targetCi].items) inv[targetCi].items = [];
-        inv[targetCi].items.push({...item}); // 加進新家
-        inv[ci].items.splice(ii, 1); // 從舊家刪除
+        inv[targetCi].items.push({...item}); 
+        inv[ci].items.splice(ii, 1); 
         
         db.ref('inventory').set(inv).then(() => {
             document.getElementById('move-modal').style.display = 'none';
@@ -554,7 +566,6 @@
         if(!newItem.n) return alert("請填品名");
         if(!cat.items) cat.items = []; cat.items.push(newItem);
         db.ref('inventory').set(inv).then(() => { 
-            // ★ 修改：不要清空 select-cat，這樣就能一直保持同分類建檔
             ['new-id', 'new-n', 'new-c', 'new-p', 'new-s'].forEach(id => document.getElementById(id).value = ''); 
             document.getElementById('new-id').focus(); 
         });
@@ -562,7 +573,6 @@
 
     function checkNewCat(v) { if(v==="ADD") { const n = prompt("新分類名稱："); if(n){ inv.push({cat:n, items:[]}); db.ref('inventory').set(inv).then(() => updateCatSelect()); } } }
     
-    // ★ 修改：加上記憶選取分類的防呆機制
     function updateCatSelect() { 
         const sel = document.getElementById('select-cat'); 
         if(sel) { 
@@ -661,6 +671,16 @@
 
     document.addEventListener('keydown', function(e) {
         if (!document.body.classList.contains('unlocked')) return;
+        
+        // ★ 新增：如果結帳成功視窗開啟中，按 Enter 鍵會關閉它並跳回搜尋框
+        if (document.getElementById('checkout-success-modal').style.display === 'flex') {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                closeCheckoutModal();
+            }
+            return; 
+        }
+
         const aid = document.activeElement.id;
         if (e.key === 'Control') { e.preventDefault(); submitOrder(); return; }
         if (e.key === '*') { if (aid !== 'discount-note') { e.preventDefault(); document.getElementById('cash-in').focus(); } return; }
