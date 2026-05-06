@@ -694,7 +694,7 @@
 
         const aid = document.activeElement.id;
         if (e.key === 'Control') { e.preventDefault(); submitOrder(); return; }
-        if (e.key === '*') { if (aid !== 'discount-note') { e.preventDefault(); document.getElementById('cash-in').focus(); } return; }
+        if (e.key === '+') { if (aid !== 'discount-note') { e.preventDefault(); document.getElementById('cash-in').focus(); } return; }
         if (e.key === '-' || e.key === 'Subtract') { if (aid !== 'quick-find' && aid !== 'discount-note') { e.preventDefault(); document.getElementById('discount').focus(); } return; }
         if (e.key === '/') { if (aid !== 'discount-note') { e.preventDefault(); setPay('電支'); } return; }
         
