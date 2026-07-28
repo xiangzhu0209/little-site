@@ -143,7 +143,7 @@
 
 <div class="main-content">
     <div class="left-section">
-        <input type="text" id="quick-find" placeholder="⌨️ 直接按數字鍵即可搜尋..." oninput="doSearch()"
+        <input type="text" id="quick-find" placeholder="⌨️ 掃描條碼或直接輸入代碼搜尋..." oninput="doSearch()"
                style="width:100%; padding:15px; font-size:1.2em; border:2px solid var(--main-brown); border-radius:12px; background:#fffcf5; box-sizing: border-box;">
         <div class="item-area" id="item-area">讀取資料中...</div>
     </div>
@@ -706,7 +706,41 @@
                 return;
             }
             if (['discount', 'discount-note', 'new-id', 'new-n', 'new-c', 'new-p', 'new-s', 'admin-search-input'].includes(aid)) return;
-            const sb = document.getElementById('quick-find'); if(sb && sb.value) { sb.value = ''; sb.blur(); initUI(); e.preventDefault(); } return;
+            
+            const sb = document.getElementById('quick-find'); 
+            if(sb && sb.value) { 
+                const scanVal = sb.value.trim().toLowerCase();
+                let exactItem = null;
+                // 檢查是否完全匹配某個商品的代碼 (不分大小寫)
+                for (let c of inv) {
+                    if (c.items) {
+                        let found = c.items.find(i => i.id && i.id.toLowerCase() === scanVal);
+                        if (found) { exactItem = found; break; }
+                    }
+                }
+                
+                if (exactItem) {
+                    if (exactItem.s > 0) {
+                        addCart(exactItem.id);
+                    } else {
+                        alert(`商品 [${exactItem.n}] 庫存不足！`);
+                    }
+                    sb.value = ''; 
+                    initUI();
+                    e.preventDefault();
+                    // 加入後，強制把焦點拉回搜尋框，準備掃描下一個
+                    setTimeout(() => sb.focus(), 10);
+                    return;
+                } else {
+                    // 若沒有完全符合，維持原本「清空並收起鍵盤/失去焦點」的行為
+                    sb.value = ''; 
+                    sb.blur(); 
+                    initUI(); 
+                    e.preventDefault(); 
+                    return;
+                }
+            } 
+            return;
         }
         
         if (e.target.tagName === 'INPUT' && aid !== 'quick-find' && aid !== 'admin-search-input') return;
